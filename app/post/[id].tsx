@@ -1,22 +1,29 @@
+import { type Comment, type Media } from '@/services/post';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import {
-    Alert,
-    Dimensions,
-    Image,
-    RefreshControl,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  Alert,
+  Dimensions,
+  Image,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { LoadingSpinner } from '../../components/loading-spinner';
-import { usePostDetail, type Comment } from '../../hooks/use-post-detail';
-import { type Media } from '../../hooks/use-posts';
-
+import { usePostDetail } from '../../hooks/use-post-detail';
 const { width: screenWidth } = Dimensions.get('window');
+
+// --- Helper Component: Avatar ---
+const UserAvatar = ({ uri, style }: { uri?: string, style: any }) => {
+  if (uri) {
+    return <Image source={{ uri }} style={style} />;
+  }
+  return <View style={[style, { backgroundColor: '#ddd' }]} />;
+};
 
 const MediaGallery = ({ media }: { media: Media[] }) => {
   if (!media || media.length === 0) return null;
@@ -47,14 +54,17 @@ const MediaGallery = ({ media }: { media: Media[] }) => {
   );
 };
 
+// --- Updated CommentItem with User object ---
 const CommentItem = ({ comment }: { comment: Comment }) => (
   <View style={styles.comment}>
-    <View style={styles.commentAvatar} />
+    <UserAvatar uri={comment.user.avatarUrl} style={styles.commentAvatar} />
+    
     <View style={styles.commentContent}>
-      <Text style={styles.commentAuthor}>{comment.author}</Text>
+      {/* Sử dụng user.name */}
+      <Text style={styles.commentAuthor}>{comment.user.name}</Text> 
       <Text style={styles.commentText}>{comment.content}</Text>
       <Text style={styles.commentTime}>
-        {new Date(comment.createdAt).toLocaleDateString('vi-VN')}
+        {new Date(comment.created_at).toLocaleDateString('vi-VN')}
       </Text>
     </View>
   </View>
@@ -63,7 +73,7 @@ const CommentItem = ({ comment }: { comment: Comment }) => (
 export default function PostDetailScreen() {
   const { id } = useLocalSearchParams();
   const postId = Array.isArray(id) ? id[0] : id;
-  
+   
   const { post, comments, loading, error, addComment, refresh } = usePostDetail(postId);
   const [commentText, setCommentText] = useState('');
   const [submittingComment, setSubmittingComment] = useState(false);
@@ -140,25 +150,32 @@ export default function PostDetailScreen() {
         {/* Post Content */}
         <View style={styles.post}>
           <View style={styles.postHeader}>
-            <View style={styles.avatar} />
+            {/* Cập nhật Avatar cho Post Author */}
+            {/* Giả định object post cũng có property user thay vì author string */}
+            <UserAvatar 
+                uri={post.user?.avatarUrl} 
+                style={styles.avatar} 
+            />
+            
             <View style={styles.authorInfo}>
-              <Text style={styles.author}>{post.author}</Text>
+               {/* Cập nhật tên tác giả bài viết */}
+              <Text style={styles.author}>{post.user?.name || 'Người dùng ẩn danh'}</Text>
               <Text style={styles.timestamp}>
-                {new Date(post.createdAt).toLocaleDateString('vi-VN')}
+                {new Date(post.created_at).toLocaleDateString('vi-VN')}
               </Text>
             </View>
           </View>
 
           <Text style={styles.postContent}>{post.content}</Text>
-          
+           
           <MediaGallery media={post.media} />
 
           <View style={styles.postFooter}>
             <TouchableOpacity style={styles.actionButton}>
-              <Text style={styles.stat}>❤️ {post.likes}</Text>
+              <Text style={styles.stat}>❤️ {post.reactions_count}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.actionButton}>
-              <Text style={styles.stat}>💬 {post.comments}</Text>
+              <Text style={styles.stat}>💬 {post.comments_count}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -166,11 +183,11 @@ export default function PostDetailScreen() {
         {/* Comments Section */}
         <View style={styles.commentsSection}>
           <Text style={styles.sectionTitle}>Bình luận ({comments.length})</Text>
-          
+           
           {comments.map((comment) => (
             <CommentItem key={comment.id} comment={comment} />
           ))}
-          
+           
           {comments.length === 0 && (
             <Text style={styles.noCommentsText}>Chưa có bình luận nào</Text>
           )}
@@ -204,6 +221,7 @@ export default function PostDetailScreen() {
 }
 
 const styles = StyleSheet.create({
+  // ... Các style giữ nguyên như cũ
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',

@@ -1,17 +1,10 @@
+import { PostService, type Comment, type PostItem } from '@/services/post';
 import { useCallback, useEffect, useState } from 'react';
-import { api } from '../services/api';
-import { Post } from './use-posts';
 
-export interface Comment {
-  id: string;
-  author: string;
-  content: string;
-  createdAt: string;
-  avatar?: string;
-}
+
 
 export const usePostDetail = (postId: string) => {
-  const [post, setPost] = useState<Post | null>(null);
+  const [post, setPost] = useState<PostItem | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -25,16 +18,16 @@ export const usePostDetail = (postId: string) => {
 
       // Fetch post and comments from API
       const [postResponse, commentsResponse] = await Promise.all([
-        api.getPost(postId),
-        api.getPostComments(postId)
+        PostService.getPostById(postId),
+        PostService.getComments(postId)
       ]);
 
-      if (!postResponse.data) {
+      if (!postResponse) {
         setError('Không tìm thấy bài viết');
         return;
       }
 
-      setPost(postResponse.data);
+      setPost(postResponse);
       setComments(commentsResponse.data);
     } catch (err: any) {
       setError('Có lỗi xảy ra khi tải bài viết');
@@ -48,14 +41,13 @@ export const usePostDetail = (postId: string) => {
     if (!postId || !content.trim()) return false;
 
     try {
-      // Call API to add comment
-      const response = await api.addComment(postId, content.trim());
+      const response = await PostService.addComment(postId, content.trim());
       
       if (response.data) {
+        // Đảm bảo response.data trả về cấu trúc Comment khớp với interface trên
         setComments(prev => [...prev, response.data]);
         
-        // Cập nhật số lượng comment trong post
-        setPost(prev => prev ? { ...prev, comments: prev.comments + 1 } : null);
+        setPost(prev => prev ? { ...prev, comments_count: prev.comments_count + 1 } : null);
         
         return true;
       }

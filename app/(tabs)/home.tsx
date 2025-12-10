@@ -13,7 +13,7 @@ import {
 import { LoadingSpinner } from '../../components/loading-spinner';
 import { usePosts } from '../../hooks/use-posts';
 // Đảm bảo đường dẫn import đúng
-import { PostItem as IPostItem, Media } from '@/services/post';
+import { type Media, type PostItem } from '@/services/post';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -48,7 +48,7 @@ const MediaGallery = ({ media }: { media: Media[] }) => {
 };
 
 // --- Component hiển thị từng bài Post ---
-const PostItem = ({ post }: { post: IPostItem }) => {
+const PostItem = ({ post }: { post: PostItem }) => {
   // Format ngày tháng
   const formattedDate = new Date(post.created_at).toLocaleDateString('vi-VN', {
     day: 'numeric', month: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit'
@@ -82,7 +82,7 @@ const PostItem = ({ post }: { post: IPostItem }) => {
         
         <View style={styles.postFooter}>
           {/* Mapping đúng tên trường từ interface */}
-          <Text style={styles.stat}>❤️ {post.reactions_countsCount || 0}</Text>
+          <Text style={styles.stat}>❤️ {post.reactions_count || 0}</Text>
           <Text style={styles.stat}>💬 {post.comments_count || 0}</Text>
           <Text style={styles.stat}>🔗 {post.shares_count || 0}</Text>
         </View>
@@ -120,7 +120,7 @@ export default function HomeScreen() {
     );
   };
 
-  const renderItem: ListRenderItem<IPostItem> = ({ item }) => (
+  const renderItem: ListRenderItem<PostItem> = ({ item }) => (
     <PostItem post={item} />
   );
 

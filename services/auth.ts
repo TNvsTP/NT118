@@ -1,19 +1,17 @@
 import * as SecureStore from 'expo-secure-store';
 import { api } from './api';
+import { type User } from './user';
 // --- Interfaces ---
 export interface LoginCredentials {
   email: string;
   password: string;
 }
 
+
+
 export interface AuthResponse {
   access_token: string;
-  user: {
-    id: string;
-    email: string;
-    name?: string;
-    avatarUrl: string;
-  };
+  user: User;
 }
 
 // --- Service Class ---

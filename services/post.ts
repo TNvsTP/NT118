@@ -28,8 +28,15 @@ export interface PostsResponse {
   hasMore: boolean;
 }
 
+export interface Comment {
+  id: string;
+  content: string;
+  created_at: string;
+  user: User; // Sử dụng User object thay vì author string
+}
+
 export interface CommentsResponse {
-  data: any[];
+  data: Comment[];
 }
 
 // --- Service Logic ---
