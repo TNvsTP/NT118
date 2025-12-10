@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ScrollView, Text, TextInput, TouchableOpacity, View, StyleSheet  } from 'react-native';
+import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 const MOCK_USERS = [
   { id: '1', name: 'Nguyễn Văn A', username: '@nguyenvana' },
