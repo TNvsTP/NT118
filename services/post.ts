@@ -31,8 +31,10 @@ export interface PostsResponse {
 export interface Comment {
   id: string;
   content: string;
+  parent_comment_id: number;
   created_at: string;
   user: User; // Sử dụng User object thay vì author string
+  children_recursive: Comment[];
 }
 
 export interface CommentsResponse {
@@ -71,9 +73,9 @@ export const PostService = {
   /**
    * Lấy chi tiết 1 bài viết
    */
-  getPostById: async (id: string) => {
-    const response = await api.get<any>(`posts/${id}`);
-    return response.data || response;
+  getPostById: async (id: string): Promise<PostItem> => {
+    const response = await api.get<PostItem>(`posts/${id}`);
+    return response;
   },
 
   /**
@@ -89,15 +91,23 @@ export const PostService = {
   /**
    * Đăng comment mới
    */
-  addComment: async (postId: string, content: string) => {
-    const response = await api.post<any>(`posts/${postId}/comments`, { content });
-    return response.data || response;
+  addComment: async (postId: string, content: string): Promise<Comment> => {
+    const response = await api.post<Comment>(`posts/${postId}/comments`, { content });
+    return response;
+  },
+
+  replyComment: async (postId: number, commentId: number, content: string ) : Promise<Comment>  =>{
+    const response = await api.post<Comment>(
+      `posts/${postId}/comments/${commentId}/replies`,
+      {content}
+    );
+    return response;
   },
 
   /**
    * Like/Unlike bài viết
    */
-  toggleLike: async (postId: string) => {
+  toggleLike: async (postId: number) => {
     return api.post(`posts/${postId}/like`, {});
   }
 };

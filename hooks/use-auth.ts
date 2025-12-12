@@ -1,12 +1,7 @@
+import { User } from '@/services/user';
 import { useEffect, useState } from 'react';
 import { AuthService } from '../services/auth';
 
-export interface User {
-  id: string;
-  email: string;
-  name?: string;
-  avatarUrl: string;
-}
 
 export function useAuth() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
