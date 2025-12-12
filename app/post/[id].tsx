@@ -1,6 +1,6 @@
 import { type Comment, type Media } from '@/services/post';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Alert,
   Dimensions,
@@ -30,7 +30,7 @@ const MediaGallery = ({ media }: { media: Media[] }) => {
 
   const imageWidth = media.length === 1 ? screenWidth - 30 : (screenWidth - 45) / 2;
   const imageHeight = media.length === 1 ? 300 : 150;
-
+  
   return (
     <View style={styles.mediaContainer}>
       {media.slice(0, 4).map((item, index) => (
@@ -55,21 +55,54 @@ const MediaGallery = ({ media }: { media: Media[] }) => {
 };
 
 // --- Updated CommentItem with User object ---
-const CommentItem = ({ comment }: { comment: Comment }) => (
-  <View style={styles.comment}>
-    <UserAvatar uri={comment.user.avatarUrl} style={styles.commentAvatar} />
-    
-    <View style={styles.commentContent}>
-      {/* Sử dụng user.name */}
-      <Text style={styles.commentAuthor}>{comment.user.name}</Text> 
-      <Text style={styles.commentText}>{comment.content}</Text>
-      <Text style={styles.commentTime}>
-        {new Date(comment.created_at).toLocaleDateString('vi-VN')}
-      </Text>
-    </View>
-  </View>
-);
+const CommentItem = ({ comment, depth = 0 }: { comment: Comment, depth?: number }) => {
+  
+  // Logic: Chỉ thụt đầu dòng nếu độ sâu hiện tại nhỏ hơn 2
+  // Bậc 0 (Gốc) -> Con nó sẽ thụt (Bậc 1)
+  // Bậc 1 -> Con nó sẽ thụt (Bậc 2)
+  // Bậc 2 trở đi -> Con nó sẽ KHÔNG thụt thêm (thẳng hàng với Bậc 2)
+  const shouldIndent = depth < 2;
 
+  return (
+    <View style={styles.commentContainer}>
+      {/* Nội dung của Comment hiện tại */}
+      <View style={styles.commentMain}>
+        <UserAvatar uri={comment.user.avatarUrl} style={styles.commentAvatar} />
+        
+        <View style={styles.commentContent}>
+          <Text style={styles.commentAuthor}>{comment.user.name}</Text> 
+          <Text style={styles.commentText}>{comment.content}</Text>
+          <View style={styles.commentFooter}>
+             <Text style={styles.commentTime}>
+              {new Date(comment.created_at).toLocaleDateString('vi-VN')}
+            </Text>
+             {/* Nút trả lời (Optional) */}
+             <TouchableOpacity style={{marginLeft: 10}}>
+                <Text style={{fontSize: 12, fontWeight: '600', color: '#666'}}>Trả lời</Text>
+             </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+
+      {/* ĐỆ QUY: Render các comment con */}
+      {comment.children_recursive && comment.children_recursive.length > 0 && (
+        <View style={[
+            styles.repliesContainer,
+            // QUAN TRỌNG: Nếu không được thụt nữa thì set paddingLeft về 0
+            !shouldIndent && { paddingLeft: 0 } 
+        ]}>
+          {comment.children_recursive.map((childReply) => (
+            <CommentItem 
+                key={childReply.id} 
+                comment={childReply} 
+                depth={depth + 1} // Tăng độ sâu lên 1 cho cấp con
+            />
+          ))}
+        </View>
+      )}
+    </View>
+  );
+};
 export default function PostDetailScreen() {
   const { id } = useLocalSearchParams();
   const postId = Array.isArray(id) ? id[0] : id;
@@ -77,6 +110,10 @@ export default function PostDetailScreen() {
   const { post, comments, loading, error, addComment, refresh } = usePostDetail(postId);
   const [commentText, setCommentText] = useState('');
   const [submittingComment, setSubmittingComment] = useState(false);
+  const rootComments = useMemo(() => {
+    if (!comments) return [];
+    return comments.filter(c => c.parent_comment_id === null);
+  }, [comments]);
 
   const handleAddComment = async () => {
     if (!commentText.trim()) return;
@@ -184,11 +221,11 @@ export default function PostDetailScreen() {
         <View style={styles.commentsSection}>
           <Text style={styles.sectionTitle}>Bình luận ({comments.length})</Text>
            
-          {comments.map((comment) => (
+          {rootComments.map((comment) => (
             <CommentItem key={comment.id} comment={comment} />
           ))}
            
-          {comments.length === 0 && (
+          {rootComments.length === 0 && (
             <Text style={styles.noCommentsText}>Chưa có bình luận nào</Text>
           )}
         </View>
@@ -366,11 +403,27 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 15,
   },
+  
   comment: {
     flexDirection: 'row',
     paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
+  },
+  commentContainer: {
+    marginBottom: 10,
+  },
+  // Phần hiển thị nội dung chính (Avatar + Text)
+  commentMain: {
+    flexDirection: 'row',
+    marginBottom: 5,
+  },
+  // Container chứa các replies (thụt vào)
+  repliesContainer: {
+    paddingLeft: 40, // Thụt vào 40px so với cha (bằng width avatar + margin)
+    marginTop: 5,
+    // borderLeftWidth: 1, // (Option) Thêm đường kẻ dọc để dễ nhìn thread
+    // borderLeftColor: '#eee',
   },
   commentAvatar: {
     width: 32,
@@ -381,16 +434,24 @@ const styles = StyleSheet.create({
   },
   commentContent: {
     flex: 1,
+    backgroundColor: '#f9f9f9', // Thêm nền nhẹ cho nội dung text để nổi bật
+    borderRadius: 12,
+    padding: 10,
   },
   commentAuthor: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 13, // Giảm nhẹ size
+    fontWeight: 'bold',
     marginBottom: 2,
+    color: '#333',
   },
   commentText: {
     fontSize: 14,
     lineHeight: 20,
     marginBottom: 4,
+  },
+  commentFooter: {
+    flexDirection: 'row',
+    marginTop: 2,
   },
   commentTime: {
     fontSize: 12,

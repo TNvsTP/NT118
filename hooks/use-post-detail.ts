@@ -43,9 +43,9 @@ export const usePostDetail = (postId: string) => {
     try {
       const response = await PostService.addComment(postId, content.trim());
       
-      if (response.data) {
+      if (response) {
         // Đảm bảo response.data trả về cấu trúc Comment khớp với interface trên
-        setComments(prev => [...prev, response.data]);
+        setComments(prev => [...prev, response]);
         
         setPost(prev => prev ? { ...prev, comments_count: prev.comments_count + 1 } : null);
         
