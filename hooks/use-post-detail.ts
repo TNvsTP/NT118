@@ -4,23 +4,80 @@ import { useAuth } from './use-auth-context';
 
 export interface CommentUI extends Comment {
   status?: 'sending' | 'sent' | 'failed';
-  localId?: string; // ID tạm để định danh khi chưa có ID thật từ server
+  localId?: string; // ID tạm
 }
+
+// --- HELPER FUNCTIONS (Đệ quy) ---
+
+// 1. Hàm tìm cha và chèn con vào
+const insertReplyToTree = (list: CommentUI[], parentId: number, newReply: CommentUI): CommentUI[] => {
+  return list.map(comment => {
+    // Nếu tìm thấy cha
+    if (comment.id === parentId) {
+      return {
+        ...comment,
+        // Chèn vào đầu danh sách con, hoặc khởi tạo mảng nếu chưa có
+        children_recursive: [newReply, ...(comment.children_recursive || [])]
+      };
+    }
+    // Nếu chưa thấy, tìm tiếp trong con của nó
+    if (comment.children_recursive && comment.children_recursive.length > 0) {
+      return {
+        ...comment,
+        children_recursive: insertReplyToTree(comment.children_recursive, parentId, newReply)
+      };
+    }
+    return comment;
+  });
+};
+
+// 2. Hàm tìm comment (bất kể ở đâu) và cập nhật data (dùng cho update thành công hoặc báo lỗi)
+const updateCommentInTree = (list: CommentUI[], localId: string, newData: Partial<CommentUI>): CommentUI[] => {
+  return list.map(comment => {
+    // Nếu tìm thấy comment cần update (so khớp localId)
+    if (comment.localId === localId) {
+      return { ...comment, ...newData };
+    }
+    
+    // Nếu chưa thấy, tìm tiếp trong con
+    if (comment.children_recursive && comment.children_recursive.length > 0) {
+      return {
+        ...comment,
+        children_recursive: updateCommentInTree(comment.children_recursive, localId, newData)
+      };
+    }
+    return comment;
+  });
+};
+
+// 3. Hàm xóa comment lỗi khỏi cây
+const removeCommentFromTree = (list: CommentUI[], localId: string): CommentUI[] => {
+    return list
+      .filter(c => c.localId !== localId) // Lọc ở cấp hiện tại
+      .map(c => {
+         if (c.children_recursive && c.children_recursive.length > 0) {
+             return {
+                 ...c,
+                 children_recursive: removeCommentFromTree(c.children_recursive, localId)
+             };
+         }
+         return c;
+      });
+};
+
 
 export const usePostDetail = (postId: number) => {
   const [post, setPost] = useState<PostItem | null>(null);
   const [comments, setComments] = useState<CommentUI[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const {user, isAuthenticated} = useAuth();
+  const { user, isAuthenticated } = useAuth();
+
   const fetchPostDetail = useCallback(async () => {
     if (!postId) return;
-    
     try {
       setLoading(true);
       setError(null);
-
-      // Fetch post and comments from API
       const [postResponse, commentsResponse] = await Promise.all([
         PostService.getPostById(postId),
         PostService.getComments(postId)
@@ -30,106 +87,130 @@ export const usePostDetail = (postId: number) => {
         setError('Không tìm thấy bài viết');
         return;
       }
-
       setPost(postResponse);
+      // Gán status mặc định là sent cho comment tải từ server
       setComments(commentsResponse.data.map((c: Comment) => ({ ...c, status: 'sent' })));
     } catch (err: any) {
       setError('Có lỗi xảy ra khi tải bài viết');
-      console.error('Error fetching post detail:', err);
+      console.error(err);
     } finally {
       setLoading(false);
     }
   }, [postId]);
 
+  // --- ADD COMMENT (ROOT) ---
   const addComment = useCallback(async (content: string) => {
-    if (!postId || !content.trim()) return false;
-    console.log(user);
-    if(isAuthenticated){
-      console.log("authenticated:", isAuthenticated);
-    }
-    if (!user) {
-      console.warn("Bạn chưa đăng nhập");
-      
-      return;
-    }
+    if (!postId || !content.trim() || !user) return false;
+
     const tempId = `temp-${Date.now()}`;
     const optimisticComment: CommentUI = {
-      id: -1, // ID tạm, sẽ được thay thế bằng ID thật từ server
+      id: -1,
       post_id: postId,
       content: content.trim(),
-      parent_comment_id: null, // Comment gốc 
+      parent_comment_id: null,
       created_at: new Date().toISOString(),
       reactions_count: 0,
       is_liked: false,
       user: user,
       children_recursive: [],
-      status: 'sending', // Trạng thái đang gửi
+      status: 'sending',
       localId: tempId
     };
 
     setComments(prev => [optimisticComment, ...prev]);
 
     try {
-      // C. Gọi API
       const response = await PostService.addComment(postId, content.trim());
-      
-     if (response) {
-        // [SỬA ĐOẠN NÀY]: Thay vì thay thế hoàn toàn { ...response }, hãy merge vào c cũ
-        setComments(prev => prev.map(c => 
-          c.localId === tempId ? { 
-            ...c,           // 1. Giữ lại các thông tin cũ (quan trọng nhất là user info)
-            ...response,    // 2. Cập nhật các thông tin mới từ server (id thật, created_at)
-            status: 'sent'  // 3. Cập nhật trạng thái
-          } : c
-        ));
-        
+      if (response) {
+        // Update thành công
+        setComments(prev => updateCommentInTree(prev, tempId, { ...response, status: 'sent' }));
         setPost(prev => prev ? { ...prev, comments_count: prev.comments_count + 1 } : null);
         return true;
-      } else {
-        throw new Error("No response");
       }
-    } catch (err: any) {
-      console.error('Error adding comment:', err);
-      // E. Thất bại: Đánh dấu comment giả là 'failed'
-      setComments(prev => prev.map(c => 
-        c.localId === tempId ? { ...c, status: 'failed' } : c
-      ));
+    } catch (err) {
+      // Update thất bại
+      setComments(prev => updateCommentInTree(prev, tempId, { status: 'failed' }));
       return false;
     }
-  }, [postId]);
-  const retryComment = useCallback(async (failedComment: CommentUI) => {
-    if (!failedComment.localId) return false;
-    
-    // Cập nhật trạng thái về 'sending'
-    setComments(prev => prev.map(c => 
-      c.localId === failedComment.localId ? { ...c, status: 'sending' } : c
-    ));
+    return false;
+  }, [postId, user]);
+
+  // --- REPLY COMMENT (NESTED) ---
+  const replyComment = useCallback(async (parentCommentId: number, content: string) => {
+    if (!postId || !content.trim() || !user) return false;
+
+    const tempId = `reply-${Date.now()}`;
+    const optimisticReply: CommentUI = {
+      id: -1,
+      post_id: postId,
+      content: content.trim(),
+      parent_comment_id: parentCommentId,
+      created_at: new Date().toISOString(),
+      reactions_count: 0,
+      is_liked: false,
+      user: user,
+      children_recursive: [],
+      status: 'sending',
+      localId: tempId
+    };
+
+    // A. Hiển thị ngay lập tức (Optimistic UI)
+    // Dùng hàm đệ quy để tìm cha và nhét con vào
+    setComments(prev => insertReplyToTree(prev, parentCommentId, optimisticReply));
 
     try {
-      const response = await PostService.addComment(postId, failedComment.content);
+      // B. Gọi API
+      const response = await PostService.replyComment(postId, parentCommentId, content.trim());
       
       if (response) {
-        // Thành công: Thay thế comment bằng response từ server
-        setComments(prev => prev.map(c => 
-          c.localId === failedComment.localId ? { ...response, status: 'sent' } : c
-        ));
+        // C. Thành công: Tìm node tạm và update data thật
+        // Lưu ý: response từ server có thể không có user object đầy đủ, nên ta merge response vào node cũ
+        setComments(prev => updateCommentInTree(prev, tempId, { ...response, status: 'sent' }));
         
+        // Tăng count comment
         setPost(prev => prev ? { ...prev, comments_count: prev.comments_count + 1 } : null);
         return true;
-      } else {
       }
     } catch (err: any) {
-      console.error('Error retrying comment:', err);
-      // Thất bại lại: Đánh dấu lại là 'failed'
-      setComments(prev => prev.map(c => 
-        c.localId === failedComment.localId ? { ...c, status: 'failed' } : c
-      ));
+      console.error('Error replying comment:', err);
+      // D. Thất bại: Đánh dấu failed
+      setComments(prev => updateCommentInTree(prev, tempId, { status: 'failed' }));
       return false;
     }
+    return false;
+  }, [postId, user]);
+
+  // --- RETRY COMMENT (Xử lý cả Root lẫn Reply) ---
+  const retryComment = useCallback(async (failedComment: CommentUI) => {
+    if (!failedComment.localId) return false;
+
+    // 1. Chuyển trạng thái sang sending
+    setComments(prev => updateCommentInTree(prev, failedComment.localId!, { status: 'sending' }));
+
+    try {
+      let response;
+      // Kiểm tra xem là comment gốc hay reply để gọi API tương ứng
+      if (failedComment.parent_comment_id) {
+          response = await PostService.replyComment(postId, failedComment.parent_comment_id, failedComment.content);
+      } else {
+          response = await PostService.addComment(postId, failedComment.content);
+      }
+
+      if (response) {
+        setComments(prev => updateCommentInTree(prev, failedComment.localId!, { ...response, status: 'sent' }));
+        setPost(prev => prev ? { ...prev, comments_count: prev.comments_count + 1 } : null);
+        return true;
+      }
+    } catch (err) {
+      setComments(prev => updateCommentInTree(prev, failedComment.localId!, { status: 'failed' }));
+      return false;
+    }
+    return false;
   }, [postId]);
 
   const removeFailedComment = useCallback((localId: string) => {
-    setComments(prev => prev.filter(c => c.localId !== localId));
+    // Dùng hàm đệ quy để xóa vì nó có thể nằm sâu bên trong
+    setComments(prev => removeCommentFromTree(prev, localId));
   }, []);
 
   useEffect(() => {
@@ -142,6 +223,7 @@ export const usePostDetail = (postId: number) => {
     loading,
     error,
     addComment,
+    replyComment,
     retryComment,
     removeFailedComment,
     refresh: fetchPostDetail,
