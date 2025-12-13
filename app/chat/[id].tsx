@@ -10,9 +10,10 @@ export default function ChatScreen() {
   const { id } = useLocalSearchParams();
   const conversationId = parseInt(id as string);
   const { user } = useAuth();
-  const { messages, conversation, loading, error, sending, sendMessage, isWebSocketConnected } = useMessages(conversationId);
+  const { messages, conversation, loading, loadingMore, error, sending, hasMore, sendMessage, loadMoreMessages, isWebSocketConnected } = useMessages(conversationId);
   const [inputText, setInputText] = useState('');
   const scrollViewRef = useRef<ScrollView>(null);
+  const [isLoadingMoreTriggered, setIsLoadingMoreTriggered] = useState(false);
 
   const formatTime = (date: Date) => {
     return new Date(date).toLocaleTimeString('vi-VN', { 
@@ -39,7 +40,7 @@ export default function ChatScreen() {
     const success = await sendMessage(inputText.trim());
     if (success) {
       setInputText('');
-      // Scroll to bottom after sending
+      // Scroll to bottom after sending (since newest messages are at bottom)
       setTimeout(() => {
         scrollViewRef.current?.scrollToEnd({ animated: true });
       }, 100);
@@ -49,13 +50,13 @@ export default function ChatScreen() {
   };
 
   useEffect(() => {
-    // Scroll to bottom when messages load
-    if (messages.length > 0) {
+    // Scroll to bottom when messages first load (newest messages are at bottom)
+    if (messages.length > 0 && !loadingMore) {
       setTimeout(() => {
         scrollViewRef.current?.scrollToEnd({ animated: false });
       }, 100);
     }
-  }, [messages.length]);
+  }, [messages.length, loadingMore]);
 
   if (loading) {
     return (
@@ -115,7 +116,24 @@ export default function ChatScreen() {
         ref={scrollViewRef}
         style={styles.messagesList}
         showsVerticalScrollIndicator={false}
+        onScroll={(event) => {
+          const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+          // Check if scrolled to top and can load more
+          if (contentOffset.y <= 50 && hasMore && !loadingMore && !isLoadingMoreTriggered) {
+            setIsLoadingMoreTriggered(true);
+            loadMoreMessages().finally(() => {
+              setTimeout(() => setIsLoadingMoreTriggered(false), 1000);
+            });
+          }
+        }}
+        scrollEventThrottle={400}
       >
+        {loadingMore && (
+          <View style={styles.loadMoreContainer}>
+            <LoadingSpinner />
+            <Text style={styles.loadMoreText}>Đang tải thêm tin nhắn...</Text>
+          </View>
+        )}
         {messages.map((message) => {
           const isMine = message.sender_id === user?.id;
           return (
@@ -306,5 +324,16 @@ const styles = StyleSheet.create({
   sendButtonText: {
     color: '#fff',
     fontWeight: '600',
+  },
+  loadMoreContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 10,
+    gap: 8,
+  },
+  loadMoreText: {
+    fontSize: 14,
+    color: '#666',
   },
 });

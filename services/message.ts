@@ -10,11 +10,13 @@ export const MessageService = {
         return response;
     },
 
-    getMessages: async (conversationId: number): Promise<MessageResponse> => {
-        const response = await api.get<any>(`conversations/${conversationId}/messages`);
+    getMessages: async (conversationId: number, cursor?: string): Promise<MessageResponse> => {
+        const params = cursor ? `?cursor=${cursor}` : '';
+        const response = await api.get<any>(`conversations/${conversationId}/messages${params}`);
         return {
             conversation: response.conversation,
             messages: response.messages.data,
+            next_cursor: response.messages.next_cursor,
         };
     },
 
