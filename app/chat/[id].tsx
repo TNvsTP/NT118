@@ -10,10 +10,16 @@ export default function ChatScreen() {
   const { id } = useLocalSearchParams();
   const conversationId = parseInt(id as string);
   const { user } = useAuth();
-  const { messages, conversation, loading, loadingMore, error, sending, hasMore, sendMessage, loadMoreMessages, isWebSocketConnected } = useMessages(conversationId);
+  const { messages, conversation, loading, loadingMore, error, sending, hasMore, sendMessage, loadMoreMessages } = useMessages(conversationId);
   const [inputText, setInputText] = useState('');
   const scrollViewRef = useRef<ScrollView>(null);
   const [isLoadingMoreTriggered, setIsLoadingMoreTriggered] = useState(false);
+  const [previousMessageCount, setPreviousMessageCount] = useState(0);
+  const [scrollPosition, setScrollPosition] = useState(0);
+  const [contentHeight, setContentHeight] = useState(0);
+  const [previousContentHeight, setPreviousContentHeight] = useState(0);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [isLoadingMoreMessages, setIsLoadingMoreMessages] = useState(false);
 
   const formatTime = (date: Date) => {
     return new Date(date).toLocaleTimeString('vi-VN', { 
@@ -49,14 +55,46 @@ export default function ChatScreen() {
     }
   };
 
+  const handleLoadMore = async () => {
+    if (!hasMore || loadingMore || isLoadingMoreMessages) return;
+    
+    // Đánh dấu đang load more và lưu trạng thái hiện tại
+    setIsLoadingMoreMessages(true);
+    setPreviousMessageCount(messages.length);
+    setPreviousContentHeight(contentHeight);
+    
+    await loadMoreMessages();
+    
+    // Reset flag sau khi load xong
+    setTimeout(() => {
+      setIsLoadingMoreMessages(false);
+    }, 500);
+  };
+
   useEffect(() => {
-    // Scroll to bottom when messages first load (newest messages are at bottom)
-    if (messages.length > 0 && !loadingMore) {
+    if (messages.length === 0) return;
+
+    // Nếu là lần load đầu tiên, scroll xuống cuối
+    if (isInitialLoad && !loading) {
+      setIsInitialLoad(false);
       setTimeout(() => {
         scrollViewRef.current?.scrollToEnd({ animated: false });
       }, 100);
+      return;
     }
-  }, [messages.length, loadingMore]);
+    
+    // Nếu có tin nhắn mới thật sự (không phải load more), scroll xuống cuối
+    if (messages.length > previousMessageCount && !isLoadingMoreMessages && !loadingMore) {
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    }
+
+    // Cập nhật previousMessageCount cho lần kiểm tra tiếp theo
+    if (!isLoadingMoreMessages) {
+      setPreviousMessageCount(messages.length);
+    }
+  }, [messages.length, loadingMore, loading]);
 
   if (loading) {
     return (
@@ -117,16 +155,37 @@ export default function ChatScreen() {
         style={styles.messagesList}
         showsVerticalScrollIndicator={false}
         onScroll={(event) => {
-          const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+          const { contentOffset, contentSize } = event.nativeEvent;
+          
+          // Lưu vị trí scroll hiện tại
+          setScrollPosition(contentOffset.y);
+          setContentHeight(contentSize.height);
+          
           // Check if scrolled to top and can load more
-          if (contentOffset.y <= 50 && hasMore && !loadingMore && !isLoadingMoreTriggered) {
+          if (contentOffset.y <= 50 && hasMore && !loadingMore && !isLoadingMoreTriggered && !isLoadingMoreMessages) {
             setIsLoadingMoreTriggered(true);
-            loadMoreMessages().finally(() => {
+            handleLoadMore().finally(() => {
               setTimeout(() => setIsLoadingMoreTriggered(false), 1000);
             });
           }
         }}
         scrollEventThrottle={400}
+        onContentSizeChange={(width, height) => {
+          // Nếu đang load more và content height thay đổi, cập nhật scroll position
+          if (isLoadingMoreMessages && height > previousContentHeight) {
+            const heightDifference = height - previousContentHeight;
+            const newScrollPosition = scrollPosition + heightDifference;
+            
+            setTimeout(() => {
+              scrollViewRef.current?.scrollTo({ 
+                y: Math.max(0, newScrollPosition), 
+                animated: false 
+              });
+            }, 50);
+          }
+          
+          setContentHeight(height);
+        }}
       >
         {loadingMore && (
           <View style={styles.loadMoreContainer}>
