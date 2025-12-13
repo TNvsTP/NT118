@@ -1,7 +1,6 @@
+import { User } from '@/models/user';
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { AuthService, AuthResponse, LoginCredentials } from '../services/auth'; // Import đúng đường dẫn service của bạn
-import { User } from '../services/user'; // Import type User
-
+import { AuthService, LoginCredentials } from '../services/auth'; // Import đúng đường dẫn service của bạn
 interface AuthContextType {
   isAuthenticated: boolean;
   user: User | null;
