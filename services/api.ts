@@ -1,7 +1,7 @@
 import * as SecureStore from 'expo-secure-store';
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://social-media-0nzo.onrender.com/api';
-
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ;
+// || 'https://social-media-0nzo.onrender.com/api'
 /**
  * Class này chịu trách nhiệm:
  * 1. Cấu hình chung (Base URL, Headers)

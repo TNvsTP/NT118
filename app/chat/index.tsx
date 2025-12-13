@@ -34,7 +34,7 @@ const ConversationItem = ({ conversation }: { conversation: Conversation }) => {
 
   return (
     <TouchableOpacity 
-      style={styles.chatItem}
+      style={styles.conversationItem}
       onPress={() => router.push(`/chat/${conversation.id}`)}
     >
       <View style={styles.avatar}>
@@ -43,12 +43,12 @@ const ConversationItem = ({ conversation }: { conversation: Conversation }) => {
         </Text>
       </View>
       
-      <View style={styles.chatContent}>
-        <View style={styles.chatHeader}>
-          <Text style={styles.chatName} numberOfLines={1}>
+      <View style={styles.conversationInfo}>
+        <View style={styles.conversationHeader}>
+          <Text style={styles.conversationName} numberOfLines={1}>
             {getConversationName()}
           </Text>
-          <Text style={styles.chatTime}>
+          <Text style={styles.conversationTime}>
             {formatTime(conversation.last_message_at)}
           </Text>
         </View>
@@ -61,34 +61,24 @@ const ConversationItem = ({ conversation }: { conversation: Conversation }) => {
   );
 };
 
-export default function MessageScreen() {
+export default function ConversationsScreen() {
   const { conversations, loading, error, refetch } = useConversations();
 
   if (loading && conversations.length === 0) {
     return (
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Tin nhắn</Text>
-        </View>
-        <View style={styles.centerContainer}>
-          <LoadingSpinner />
-        </View>
+      <View style={styles.centerContainer}>
+        <LoadingSpinner />
       </View>
     );
   }
 
   if (error) {
     return (
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Tin nhắn</Text>
-        </View>
-        <View style={styles.centerContainer}>
-          <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={refetch}>
-            <Text style={styles.retryButtonText}>Thử lại</Text>
-          </TouchableOpacity>
-        </View>
+      <View style={styles.centerContainer}>
+        <Text style={styles.errorText}>{error}</Text>
+        <TouchableOpacity style={styles.retryButton} onPress={refetch}>
+          <Text style={styles.retryButtonText}>Thử lại</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -111,7 +101,6 @@ export default function MessageScreen() {
             <Text style={styles.emptyText}>Chưa có cuộc trò chuyện nào</Text>
           </View>
         }
-        style={styles.chatList}
       />
     </View>
   );
@@ -138,12 +127,9 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
+    textAlign: 'center',
   },
-  chatList: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  chatItem: {
+  conversationItem: {
     flexDirection: 'row',
     padding: 15,
     backgroundColor: '#fff',
@@ -164,22 +150,22 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
   },
-  chatContent: {
+  conversationInfo: {
     flex: 1,
   },
-  chatHeader: {
+  conversationHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 4,
   },
-  chatName: {
+  conversationName: {
     fontSize: 16,
     fontWeight: '600',
     flex: 1,
     marginRight: 8,
   },
-  chatTime: {
+  conversationTime: {
     fontSize: 12,
     color: '#666',
   },
