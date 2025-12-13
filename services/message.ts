@@ -4,8 +4,9 @@ import { type ConversationResponse, type Message, type MessageResponse } from "@
 
 export const MessageService = {
 
-    getConversations: async (): Promise<ConversationResponse> => {
+    getConversations: async (): Promise<any> => {
         const response = await api.get<ConversationResponse>("conversations");
+        
         return response;
     },
 

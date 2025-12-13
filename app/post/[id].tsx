@@ -1,4 +1,4 @@
-import { type Media } from '@/services/post';
+import { type Media } from '@/models/post';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
 import {

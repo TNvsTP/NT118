@@ -7,7 +7,7 @@ export interface Conversation{
     avatar_url: string | null;
     last_message_at: Date;
     participants: Participant[];
-    last_message: Message;
+    last_message: Message | null;
 
 }
 
