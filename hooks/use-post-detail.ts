@@ -1,4 +1,5 @@
-import { PostService, type Comment, type PostItem } from '@/services/post';
+import { type Comment, type PostItem } from '@/models/post';
+import { PostService } from '@/services/post';
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from './use-auth-context';
 

@@ -21,13 +21,15 @@ export interface Participant{
 }
 
 export interface Message{
-    id: number;
+    id: number | string; // Cho phép temporary ID dạng string
     conversation_id: number;
     sender_id: number;
     content: string;
     created_at: Date;
     sender: User;
-
+    // Thêm trạng thái cho optimistic updates
+    status?: 'sending' | 'sent' | 'failed';
+    tempId?: string; // ID tạm thời cho message đang gửi
 }
 
 export interface ConversationResponse {

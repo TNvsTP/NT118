@@ -1,7 +1,6 @@
-import { PostItem, PostService } from '@/services/post';
+import { type PostItem } from '@/models/post';
+import { PostService } from '@/services/post';
 import { useCallback, useEffect, useState } from 'react';
-
-
 
 
   export const usePosts = () => {
