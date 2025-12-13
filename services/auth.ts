@@ -1,6 +1,7 @@
+import { type User } from '@/models/user';
 import * as SecureStore from 'expo-secure-store';
 import { api } from './api';
-import { type User } from './user';
+import { webSocketService } from './websocket';
 // --- Interfaces ---
 export interface LoginCredentials {
   email: string;
@@ -35,6 +36,7 @@ export class AuthService {
         SecureStore.setItemAsync(this.TOKEN_KEY, authData.access_token),
         SecureStore.setItemAsync(this.USER_KEY, JSON.stringify(authData.user))
       ]);
+      await webSocketService.init();
 
       return authData;
     } catch (error: any) {
