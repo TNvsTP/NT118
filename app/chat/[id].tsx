@@ -10,7 +10,7 @@ export default function ChatScreen() {
   const { id } = useLocalSearchParams();
   const conversationId = parseInt(id as string);
   const { user } = useAuth();
-  const { messages, conversation, loading, loadingMore, error, sending, hasMore, sendMessage, loadMoreMessages } = useMessages(conversationId);
+  const { messages, conversation, loading, loadingMore, error, sending, hasMore, sendMessage, retryMessage, loadMoreMessages } = useMessages(conversationId);
   const [inputText, setInputText] = useState('');
   const scrollViewRef = useRef<ScrollView>(null);
   const [isLoadingMoreTriggered, setIsLoadingMoreTriggered] = useState(false);
@@ -41,17 +41,26 @@ export default function ChatScreen() {
   };
 
   const handleSendMessage = async () => {
-    if (!inputText.trim() || sending) return;
+    if (!inputText.trim()) return;
     
-    const success = await sendMessage(inputText.trim());
-    if (success) {
-      setInputText('');
-      // Scroll to bottom after sending (since newest messages are at bottom)
-      setTimeout(() => {
-        scrollViewRef.current?.scrollToEnd({ animated: true });
-      }, 100);
-    } else {
-      Alert.alert('Lỗi', 'Không thể gửi tin nhắn. Vui lòng thử lại.');
+    const messageToSend = inputText.trim();
+    
+    // Clear input ngay lập tức để cho phép gửi message tiếp theo
+    setInputText('');
+    
+    // Gửi message (với optimistic update)
+    await sendMessage(messageToSend);
+    
+    // Scroll to bottom after sending (since newest messages are at bottom)
+    setTimeout(() => {
+      scrollViewRef.current?.scrollToEnd({ animated: true });
+    }, 100);
+  };
+
+  const handleRetryMessage = async (tempId: string) => {
+    const success = await retryMessage(tempId);
+    if (!success) {
+      Alert.alert('Lỗi', 'Không thể gửi lại tin nhắn. Vui lòng thử lại.');
     }
   };
 
@@ -194,31 +203,62 @@ export default function ChatScreen() {
           </View>
         )}
         {messages.map((message) => {
-          const isMine = message.sender_id === user?.id;
+          const isMine = message.sender_id === user?.id || message.status === 'sending';
+          const isOptimistic = typeof message.id === 'string' || message.status === 'sending';
+          
           return (
             <View
-              key={message.id}
+              key={message.tempId || message.id}
               style={[
                 styles.messageContainer,
                 isMine ? styles.myMessage : styles.theirMessage,
+                isOptimistic && styles.optimisticMessage,
               ]}
             >
               {!isMine && (
                 <Text style={styles.senderName}>{message.sender.name}</Text>
               )}
-              <View
+              <TouchableOpacity
                 style={[
                   styles.messageBubble,
                   isMine ? styles.myBubble : styles.theirBubble,
+                  message.status === 'failed' && styles.failedBubble,
+                  message.status === 'sending' && styles.sendingBubble,
                 ]}
+                onPress={() => {
+                  if (message.status === 'failed' && message.tempId) {
+                    handleRetryMessage(message.tempId);
+                  }
+                }}
+                disabled={message.status !== 'failed'}
               >
-                <Text style={isMine ? styles.myText : styles.theirText}>
+                <Text style={[
+                  isMine ? styles.myText : styles.theirText,
+                  message.status === 'sending' && styles.sendingText,
+                  message.status === 'failed' && styles.failedText,
+                ]}>
                   {message.content}
                 </Text>
+                {message.status === 'failed' && (
+                  <Text style={styles.retryHint}>Nhấn để gửi lại</Text>
+                )}
+              </TouchableOpacity>
+              <View style={styles.messageFooter}>
+                <Text style={styles.messageTime}>
+                  {formatTime(message.created_at)}
+                </Text>
+                {isMine && (
+                  <Text style={[
+                    styles.messageStatus,
+                    message.status === 'sending' && styles.sendingStatus,
+                    message.status === 'failed' && styles.failedStatus,
+                  ]}>
+                    {message.status === 'sending' && '⏳'}
+                    {message.status === 'sent' && '✓'}
+                    {message.status === 'failed' && '❌'}
+                  </Text>
+                )}
               </View>
-              <Text style={styles.messageTime}>
-                {formatTime(message.created_at)}
-              </Text>
             </View>
           );
         })}
@@ -234,13 +274,11 @@ export default function ChatScreen() {
           maxLength={1000}
         />
         <TouchableOpacity 
-          style={[styles.sendButton, (!inputText.trim() || sending) && styles.sendButtonDisabled]}
+          style={[styles.sendButton, !inputText.trim() && styles.sendButtonDisabled]}
           onPress={handleSendMessage}
-          disabled={!inputText.trim() || sending}
+          disabled={!inputText.trim()}
         >
-          <Text style={styles.sendButtonText}>
-            {sending ? '...' : 'Gửi'}
-          </Text>
+          <Text style={styles.sendButtonText}>Gửi</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -394,5 +432,42 @@ const styles = StyleSheet.create({
   loadMoreText: {
     fontSize: 14,
     color: '#666',
+  },
+  optimisticMessage: {
+    opacity: 0.7,
+  },
+  sendingBubble: {
+    backgroundColor: '#B3D9FF', // Màu xanh nhạt hơn khi đang gửi
+  },
+  failedBubble: {
+    backgroundColor: '#FFB3B3', // Màu đỏ nhạt khi thất bại
+    borderColor: '#ff3b30',
+    borderWidth: 1,
+  },
+  sendingText: {
+    color: '#0066CC',
+  },
+  failedText: {
+    color: '#CC0000',
+  },
+  messageFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  messageStatus: {
+    fontSize: 12,
+  },
+  sendingStatus: {
+    color: '#666',
+  },
+  failedStatus: {
+    color: '#ff3b30',
+  },
+  retryHint: {
+    fontSize: 11,
+    color: '#666',
+    fontStyle: 'italic',
+    marginTop: 4,
   },
 });
