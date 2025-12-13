@@ -37,4 +37,6 @@ export interface ConversationResponse {
 export interface MessageResponse{
     conversation: Conversation; 
     messages: Message[];
+    next_cursor?: string | null;
+
 }
