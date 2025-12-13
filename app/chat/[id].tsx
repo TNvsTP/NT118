@@ -1,4 +1,5 @@
 import { LoadingSpinner } from '@/components/loading-spinner';
+import { WebSocketStatus } from '@/components/websocket-status';
 import { useAuth } from '@/hooks/use-auth-context';
 import { useMessages } from '@/hooks/use-messages';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -9,7 +10,7 @@ export default function ChatScreen() {
   const { id } = useLocalSearchParams();
   const conversationId = parseInt(id as string);
   const { user } = useAuth();
-  const { messages, conversation, loading, error, sending, sendMessage } = useMessages(conversationId);
+  const { messages, conversation, loading, error, sending, sendMessage, isWebSocketConnected } = useMessages(conversationId);
   const [inputText, setInputText] = useState('');
   const scrollViewRef = useRef<ScrollView>(null);
 
@@ -102,7 +103,10 @@ export default function ChatScreen() {
               {getConversationName().charAt(0).toUpperCase()}
             </Text>
           </View>
-          <Text style={styles.headerTitle}>{getConversationName()}</Text>
+          <View>
+            <Text style={styles.headerTitle}>{getConversationName()}</Text>
+            <WebSocketStatus />
+          </View>
         </View>
         <View style={{ width: 40 }} />
       </View>
@@ -206,6 +210,10 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 16,
     fontWeight: '600',
+  },
+  connectionStatus: {
+    fontSize: 12,
+    fontWeight: '500',
   },
   loadingContainer: {
     flex: 1,

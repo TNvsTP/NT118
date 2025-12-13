@@ -5,9 +5,13 @@ import 'react-native-reanimated';
 
 import { AuthProvider } from '@/hooks/use-auth-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useWebSocket } from '@/hooks/use-websocket';
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
+  
+  // Initialize WebSocket connection when app starts
+  useWebSocket();
 
   return (
     <AuthProvider>
