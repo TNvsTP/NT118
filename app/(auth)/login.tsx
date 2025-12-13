@@ -1,4 +1,4 @@
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth } from '@/hooks/use-auth-context';
 import { Link, router } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -24,7 +24,7 @@ export default function LoginScreen() {
 
     setIsLoading(true);
     try {
-      await login(email.trim(), password );
+      await login({ email: email.trim(), password: password} );
 
       Alert.alert('Thành công', 'Đăng nhập thành công!', [
         {

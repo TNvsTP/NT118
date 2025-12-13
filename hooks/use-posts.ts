@@ -1,4 +1,4 @@
-  import { PostItem, PostService } from '@/services/post';
+import { PostItem, PostService } from '@/services/post';
 import { useCallback, useEffect, useState } from 'react';
 
 

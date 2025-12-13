@@ -1,7 +1,8 @@
-import { type Comment, type Media } from '@/services/post';
+import { type Media } from '@/services/post';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   Dimensions,
   Image,
@@ -55,47 +56,85 @@ const MediaGallery = ({ media }: { media: Media[] }) => {
 };
 
 // --- Updated CommentItem with User object ---
-const CommentItem = ({ comment, depth = 0 }: { comment: Comment, depth?: number }) => {
-  
-  // Logic: Chỉ thụt đầu dòng nếu độ sâu hiện tại nhỏ hơn 2
-  // Bậc 0 (Gốc) -> Con nó sẽ thụt (Bậc 1)
-  // Bậc 1 -> Con nó sẽ thụt (Bậc 2)
-  // Bậc 2 trở đi -> Con nó sẽ KHÔNG thụt thêm (thẳng hàng với Bậc 2)
+// PostDetailScreen.tsx (Phần CommentItem)
+
+const CommentItem = ({ comment, depth = 0, onRetry, onRemove }: { 
+  comment: any, 
+  depth?: number, 
+  onRetry?: (comment: any) => void,
+  onRemove?: (localId: string) => void 
+}) => {
   const shouldIndent = depth < 2;
+  
+  // Lấy trạng thái
+  const isSending = comment.status === 'sending';
+  const isFailed = comment.status === 'failed';
 
   return (
-    <View style={styles.commentContainer}>
-      {/* Nội dung của Comment hiện tại */}
+    <View style={[
+        styles.commentContainer, 
+        // Làm mờ nhẹ nếu đang gửi để tạo cảm giác "chưa hoàn tất"
+        { opacity: isSending ? 0.7 : 1 } 
+    ]}> 
       <View style={styles.commentMain}>
-        <UserAvatar uri={comment.user.avatarUrl} style={styles.commentAvatar} />
+        {/* User Avatar */}
+        <UserAvatar uri={comment.user?.avatarUrl} style={styles.commentAvatar} />
         
         <View style={styles.commentContent}>
-          <Text style={styles.commentAuthor}>{comment.user.name}</Text> 
+          <Text style={styles.commentAuthor}>{comment.user?.name || 'Người dùng'}</Text> 
           <Text style={styles.commentText}>{comment.content}</Text>
+          
           <View style={styles.commentFooter}>
+             {/* Hiển thị thời gian hoặc trạng thái */}
              <Text style={styles.commentTime}>
-              {new Date(comment.created_at).toLocaleDateString('vi-VN')}
+              {isSending 
+                ? 'Đang gửi...' 
+                : isFailed 
+                  ? 'Gửi lỗi' 
+                  : new Date(comment.created_at).toLocaleDateString('vi-VN')}
             </Text>
-             {/* Nút trả lời (Optional) */}
-             <TouchableOpacity style={{marginLeft: 10}}>
-                <Text style={{fontSize: 12, fontWeight: '600', color: '#666'}}>Trả lời</Text>
-             </TouchableOpacity>
+            
+            {/* TRẠNG THÁI: ĐANG GỬI */}
+            {isSending && (
+                <ActivityIndicator size="small" color="#999" style={{marginLeft: 8}} />
+            )}
+
+            {/* TRẠNG THÁI: THẤT BẠI */}
+            {isFailed && (
+                <View style={{flexDirection: 'row', alignItems: 'center', marginLeft: 10}}>
+                    {onRetry && (
+                        <TouchableOpacity onPress={() => onRetry(comment)} style={{marginRight: 10}}>
+                            <Text style={{color: '#007AFF', fontSize: 12, fontWeight: '600'}}>Thử lại</Text>
+                        </TouchableOpacity>
+                    )}
+                    {onRemove && comment.localId && (
+                        <TouchableOpacity onPress={() => onRemove(comment.localId)}>
+                            <Text style={{color: '#ff4444', fontSize: 12, fontWeight: '600'}}>Xóa</Text>
+                        </TouchableOpacity>
+                    )}
+                </View>
+            )}
+
+            {/* Nút Trả lời chỉ hiện khi đã gửi thành công */}
+            {!isSending && !isFailed && (
+                 <TouchableOpacity style={{marginLeft: 15}}>
+                    <Text style={{fontSize: 12, fontWeight: '600', color: '#666'}}>Trả lời</Text>
+                 </TouchableOpacity>
+            )}
           </View>
         </View>
       </View>
 
-      {/* ĐỆ QUY: Render các comment con */}
+      {/* Đệ quy render comment con (nếu có) */}
       {comment.children_recursive && comment.children_recursive.length > 0 && (
-        <View style={[
-            styles.repliesContainer,
-            // QUAN TRỌNG: Nếu không được thụt nữa thì set paddingLeft về 0
-            !shouldIndent && { paddingLeft: 0 } 
-        ]}>
-          {comment.children_recursive.map((childReply) => (
+        <View style={[styles.repliesContainer, !shouldIndent && { paddingLeft: 0 }]}>
+          {comment.children_recursive.map((childReply: any) => (
             <CommentItem 
-                key={childReply.id} 
+                key={childReply.id || childReply.localId} 
                 comment={childReply} 
-                depth={depth + 1} // Tăng độ sâu lên 1 cho cấp con
+                depth={depth + 1}
+                onRetry={onRetry}
+                onRemove={onRemove}
             />
           ))}
         </View>
@@ -103,11 +142,15 @@ const CommentItem = ({ comment, depth = 0 }: { comment: Comment, depth?: number 
     </View>
   );
 };
+
 export default function PostDetailScreen() {
   const { id } = useLocalSearchParams();
-  const postId = Array.isArray(id) ? id[0] : id;
+  const rawId = Array.isArray(id) ? id[0] : (id || '');
+
+  // 2. Ép kiểu sang Number. Nếu không có id thì mặc định là 0 hoặc -1
+  const postId = rawId ? Number(rawId) : 0;
    
-  const { post, comments, loading, error, addComment, refresh } = usePostDetail(postId);
+  const { post, comments, loading, error, addComment, retryComment, removeFailedComment, refresh } = usePostDetail(postId);
   const [commentText, setCommentText] = useState('');
   const [submittingComment, setSubmittingComment] = useState(false);
   const rootComments = useMemo(() => {
@@ -116,14 +159,21 @@ export default function PostDetailScreen() {
   }, [comments]);
 
   const handleAddComment = async () => {
-    if (!commentText.trim()) return;
+    const contentToSend = commentText.trim(); // 1. Lưu nội dung vào biến tạm
+    if (!contentToSend) return;
 
-    setSubmittingComment(true);
-    const success = await addComment(commentText);
+    // 2. Clear input NGAY LẬP TỨC để tạo cảm giác mượt mà
+    setCommentText(''); 
     
-    if (success) {
-      setCommentText('');
-    } else {
+    // 3. Không cần loading state cho input nữa (hoặc giữ nếu muốn disable nút gửi)
+    setSubmittingComment(true);
+
+    // 4. Gọi hàm gửi với nội dung đã lưu
+    const success = await addComment(contentToSend);
+    
+    // 5. Nếu thất bại thì hồi phục lại text để user không phải gõ lại (UX tốt hơn)
+    if (!success) {
+      setCommentText(contentToSend); 
       Alert.alert('Lỗi', 'Không thể gửi bình luận. Vui lòng thử lại.');
     }
     
@@ -222,7 +272,12 @@ export default function PostDetailScreen() {
           <Text style={styles.sectionTitle}>Bình luận ({comments.length})</Text>
            
           {rootComments.map((comment) => (
-            <CommentItem key={comment.id} comment={comment} />
+            <CommentItem 
+              key={comment.id || comment.localId} 
+              comment={comment} 
+              onRetry={retryComment}
+              onRemove={removeFailedComment}
+            />
           ))}
            
           {rootComments.length === 0 && (
