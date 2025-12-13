@@ -29,11 +29,14 @@ export interface PostsResponse {
 }
 
 export interface Comment {
-  id: string;
+  id: number;
+  post_id: number;
   content: string;
-  parent_comment_id: number;
+  parent_comment_id: number | null;
   created_at: string;
-  user: User; // Sử dụng User object thay vì author string
+  user: User;
+  is_liked: boolean;
+  reactions_count: number;
   children_recursive: Comment[];
 }
 
@@ -73,7 +76,7 @@ export const PostService = {
   /**
    * Lấy chi tiết 1 bài viết
    */
-  getPostById: async (id: string): Promise<PostItem> => {
+  getPostById: async (id: number): Promise<PostItem> => {
     const response = await api.get<PostItem>(`posts/${id}`);
     return response;
   },
@@ -81,7 +84,7 @@ export const PostService = {
   /**
    * Lấy danh sách comment của bài viết
    */
-  getComments: async (postId: string): Promise<CommentsResponse> => {
+  getComments: async (postId: number): Promise<CommentsResponse> => {
     const response = await api.get<any>(`posts/${postId}/comments`);
     return {
       data: response.data || response || []
@@ -91,7 +94,7 @@ export const PostService = {
   /**
    * Đăng comment mới
    */
-  addComment: async (postId: string, content: string): Promise<Comment> => {
+  addComment: async (postId: number, content: string): Promise<Comment> => {
     const response = await api.post<Comment>(`posts/${postId}/comments`, { content });
     return response;
   },

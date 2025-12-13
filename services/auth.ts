@@ -25,9 +25,11 @@ export class AuthService {
    */
   static async login(credentials: LoginCredentials): Promise<AuthResponse> {
     try {
+      console.log("đang login...");
+      
       // api.post đã trả về data JSON, không cần .data nữa
-      const authData = await api.post<AuthResponse>('auth/login', credentials); // Endpoint thường là 'login', không cần '/auth/login' nếu BaseURL đã có /api
-
+      const authData = await api.post<any>('auth/login', credentials); // Endpoint thường là 'login', không cần '/auth/login' nếu BaseURL đã có /api
+      console.log("auth:", authData.data);
       // Lưu token & user song song để tiết kiệm thời gian
       await Promise.all([
         SecureStore.setItemAsync(this.TOKEN_KEY, authData.access_token),
