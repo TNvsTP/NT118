@@ -26,7 +26,9 @@ export default function HomeScreen() {
     loadMore, 
     refresh,
     updatePostReaction,
-    updatePostShare
+    updatePostShare,
+    updatePost,
+    removePost
   } = usePosts();
 
   // Refresh khi focus vào trang (sau khi đăng bài)
@@ -63,11 +65,27 @@ export default function HomeScreen() {
     updatePostShare(postId, newState);
   };
 
+  const handlePostUpdated = (updatedPost: PostItem) => {
+    updatePost(updatedPost);
+  };
+
+  const handlePostDeleted = (postId: number) => {
+    removePost(postId);
+  };
+
+  const handlePostReported = (postId: number) => {
+    // Ẩn bài đăng sau khi report thành công
+    removePost(postId);
+  };
+
   const renderItem: ListRenderItem<PostItem> = ({ item }) => (
     <PostCard 
       post={item} 
       onReactionToggle={handleReactionToggle}
       onShareToggle={handleShareToggle}
+      onPostUpdated={handlePostUpdated}
+      onPostDeleted={handlePostDeleted}
+      onPostReported={handlePostReported}
     />
   );
 

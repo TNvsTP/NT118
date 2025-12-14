@@ -1,16 +1,16 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    Image,
-    RefreshControl,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  Alert,
+  Image,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { LoadingSpinner } from '../../components/loading-spinner';
 import { PostCard } from '../../components/post-card';
@@ -325,6 +325,18 @@ export default function PostDetailScreen() {
           isDetailView={true}
           onReactionToggle={handleReactionToggle}
           onShareToggle={handleShareToggle}
+          onPostUpdated={(updatedPost) => {
+            // Cập nhật post trong detail view
+            // Có thể cần thêm hàm updatePost trong usePostDetail
+          }}
+          onPostDeleted={(postId) => {
+            // Quay về trang trước khi post bị xóa
+            router.back();
+          }}
+          onPostReported={(postId) => {
+            // Quay về trang trước khi post bị report
+            router.back();
+          }}
         />
 
         {/* Comments Section */}

@@ -1,7 +1,8 @@
+import { useAuth } from '@/hooks/use-auth-context';
 import { type Media, type PostItem } from '@/models/post';
 import { PostService } from '@/services/post';
 import { router } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Alert,
   Dimensions,
@@ -11,7 +12,9 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import { EditPostModal } from '../app/modals/edit-post';
 import { ReactionsSharesModal } from '../app/modals/reactions-shares-modal';
+import { ReportPostModal } from '../app/modals/report-post';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -20,6 +23,9 @@ interface PostCardProps {
   isDetailView?: boolean; // Để biết có đang ở trang chi tiết không
   onReactionToggle?: (postId: number, newState: boolean) => void;
   onShareToggle?: (postId: number, newState: boolean) => void;
+  onPostUpdated?: (updatedPost: PostItem) => void;
+  onPostDeleted?: (postId: number) => void;
+  onPostReported?: (postId: number) => void;
 }
 
 // Component hiển thị avatar user
@@ -73,12 +79,25 @@ export const PostCard: React.FC<PostCardProps> = ({
   post, 
   isDetailView = false,
   onReactionToggle,
-  onShareToggle 
+  onShareToggle,
+  onPostUpdated,
+  onPostDeleted,
+  onPostReported
 }) => {
+  const { user } = useAuth();
+  const [currentPost, setCurrentPost] = useState(post);
   const [modalVisible, setModalVisible] = useState(false);
   const [modalTab, setModalTab] = useState<'reactions' | 'shares'>('reactions');
+  const [showOverflowMenu, setShowOverflowMenu] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
 
-  const formattedDate = new Date(post.created_at).toLocaleDateString('vi-VN', {
+  // Cập nhật currentPost khi post prop thay đổi
+  useEffect(() => {
+    setCurrentPost(post);
+  }, [post]);
+
+  const formattedDate = new Date(currentPost.created_at).toLocaleDateString('vi-VN', {
     day: 'numeric', 
     month: 'numeric', 
     year: 'numeric', 
@@ -86,13 +105,13 @@ export const PostCard: React.FC<PostCardProps> = ({
     minute: '2-digit'
   });
 
-  const userName = post.user?.name || "Người dùng";
-  const userAvatar = post.user?.avatarUrl;
+  const userName = currentPost.user?.name || "Người dùng";
+  const userAvatar = currentPost.user?.avatarUrl;
 
   // Xử lý nhấn vào avatar -> đi tới profile user
   const handleAvatarPress = () => {
-    if (post.user?.id) {
-      router.push(`/profile/${post.user.id}` as any);
+    if (currentPost.user?.id) {
+      router.push(`/profile/${currentPost.user.id}` as any);
     }
   };
 
@@ -111,9 +130,17 @@ export const PostCard: React.FC<PostCardProps> = ({
   // Xử lý toggle reaction
   const handleReactionPress = async () => {
     try {
-      await PostService.toggleReaction(post.id);
-      const newState = !post.is_liked;
-      onReactionToggle?.(post.id, newState);
+      await PostService.toggleReaction(currentPost.id);
+      const newState = !currentPost.is_liked;
+      // Cập nhật local state
+      setCurrentPost(prev => ({
+        ...prev,
+        is_liked: newState,
+        reactions_count: newState 
+          ? prev.reactions_count + 1 
+          : Math.max(0, prev.reactions_count - 1)
+      }));
+      onReactionToggle?.(currentPost.id, newState);
     } catch (error) {
       Alert.alert('Lỗi', 'Không thể thực hiện reaction');
     }
@@ -122,9 +149,17 @@ export const PostCard: React.FC<PostCardProps> = ({
   // Xử lý toggle share
   const handleSharePress = async () => {
     try {
-      await PostService.toggleShare(post.id);
-      const newState = !post.is_shared;
-      onShareToggle?.(post.id, newState);
+      await PostService.toggleShare(currentPost.id);
+      const newState = !currentPost.is_shared;
+      // Cập nhật local state
+      setCurrentPost(prev => ({
+        ...prev,
+        is_shared: newState,
+        shares_count: newState 
+          ? prev.shares_count + 1 
+          : Math.max(0, prev.shares_count - 1)
+      }));
+      onShareToggle?.(currentPost.id, newState);
     } catch (error) {
       Alert.alert('Lỗi', 'Không thể thực hiện share');
     }
@@ -133,7 +168,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   // Xử lý nhấn vào content/comment -> đi tới chi tiết post
   const handleContentPress = () => {
     if (!isDetailView) {
-      router.push(`/post/${post.id}` as any);
+      router.push(`/post/${currentPost.id}` as any);
     }
   };
 
@@ -147,6 +182,60 @@ export const PostCard: React.FC<PostCardProps> = ({
   const handleSharesPress = () => {
     setModalTab('shares');
     setModalVisible(true);
+  };
+
+  // Kiểm tra xem post có phải của user hiện tại không
+  const isMyPost = user?.id === currentPost.user?.id;
+
+  // Xử lý overflow menu
+  const handleOverflowPress = () => {
+    setShowOverflowMenu(true);
+  };
+
+  const handleDeletePost = () => {
+    Alert.alert(
+      'Xóa bài viết',
+      'Bạn có chắc chắn muốn xóa bài viết này?',
+      [
+        { text: 'Hủy', style: 'cancel' },
+        {
+          text: 'Xóa',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await PostService.deletePost(currentPost.id);
+              onPostDeleted?.(currentPost.id);
+              Alert.alert('Thành công', 'Đã xóa bài viết');
+            } catch (error) {
+              Alert.alert('Lỗi', 'Không thể xóa bài viết');
+            }
+          }
+        }
+      ]
+    );
+    setShowOverflowMenu(false);
+  };
+
+  const handleEditPost = () => {
+    setShowOverflowMenu(false);
+    setShowEditModal(true);
+  };
+
+  const handleReportPost = () => {
+    setShowOverflowMenu(false);
+    setShowReportModal(true);
+  };
+
+  const handlePostUpdated = (updatedPost: PostItem) => {
+    // Cập nhật local state ngay lập tức
+    setCurrentPost(updatedPost);
+    // Thông báo cho parent component
+    onPostUpdated?.(updatedPost);
+  };
+
+  const handleReportSuccess = (postId: number) => {
+    // Thông báo cho parent component để ẩn bài đăng
+    onPostReported?.(postId);
   };
 
   return (
@@ -163,7 +252,55 @@ export const PostCard: React.FC<PostCardProps> = ({
           </TouchableOpacity>
           <Text style={styles.timestamp}>{formattedDate}</Text>
         </View>
+
+        {/* Overflow menu button với dropdown */}
+        <View style={styles.overflowContainer}>
+          <TouchableOpacity 
+            style={styles.overflowButton}
+            onPress={handleOverflowPress}
+          >
+            <Text style={styles.overflowIcon}>⋯</Text>
+          </TouchableOpacity>
+          
+          {/* Dropdown Menu */}
+          {showOverflowMenu && (
+            <View style={styles.dropdownMenu}>
+              {isMyPost ? (
+                <>
+                  <TouchableOpacity 
+                    style={styles.dropdownItem}
+                    onPress={handleEditPost}
+                  >
+                    <Text style={styles.dropdownItemText}>✏️ Chỉnh sửa</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={[styles.dropdownItem, styles.deleteDropdownItem]}
+                    onPress={handleDeletePost}
+                  >
+                    <Text style={[styles.dropdownItemText, styles.deleteDropdownText]}>🗑️ Xóa</Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <TouchableOpacity 
+                  style={styles.dropdownItem}
+                  onPress={handleReportPost}
+                >
+                  <Text style={styles.dropdownItemText}>🚨 Báo cáo</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+        </View>
       </View>
+      
+      {/* Overlay để đóng dropdown khi click bên ngoài */}
+      {showOverflowMenu && (
+        <TouchableOpacity 
+          style={styles.dropdownOverlay}
+          activeOpacity={1}
+          onPress={() => setShowOverflowMenu(false)}
+        />
+      )}
       
       {/* Content có thể nhấn để vào chi tiết (nếu không phải đang ở chi tiết) */}
       <TouchableOpacity 
@@ -171,12 +308,12 @@ export const PostCard: React.FC<PostCardProps> = ({
         disabled={isDetailView}
         activeOpacity={isDetailView ? 1 : 0.7}
       >
-        <Text style={styles.content}>{post.content}</Text>
+        <Text style={styles.content}>{currentPost.content}</Text>
       </TouchableOpacity>
       
       {/* Media gallery với khả năng nhấn vào ảnh */}
       <MediaGallery 
-        media={post.media} 
+        media={currentPost.media} 
         onImagePress={handleImagePress}
       />
       
@@ -189,13 +326,13 @@ export const PostCard: React.FC<PostCardProps> = ({
           >
             <Text style={[
               styles.stat, 
-              post.is_liked && styles.statActive
+              currentPost.is_liked && styles.statActive
             ]}>
-              {post.is_liked ? '❤️' : '🤍'}
+              {currentPost.is_liked ? '❤️' : '🤍'}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={handleReactionsPress}>
-            <Text style={styles.countText}>{post.reactions_count || 0}</Text>
+            <Text style={styles.countText}>{currentPost.reactions_count || 0}</Text>
           </TouchableOpacity>
         </View>
 
@@ -205,7 +342,7 @@ export const PostCard: React.FC<PostCardProps> = ({
           onPress={handleContentPress}
           disabled={isDetailView}
         >
-          <Text style={styles.stat}>💬 {post.comments_count || 0}</Text>
+          <Text style={styles.stat}>💬 {currentPost.comments_count || 0}</Text>
         </TouchableOpacity>
 
         {/* Share button */}
@@ -216,13 +353,13 @@ export const PostCard: React.FC<PostCardProps> = ({
           >
             <Text style={[
               styles.stat,
-              post.is_shared && styles.statActive
+              currentPost.is_shared && styles.statActive
             ]}>
-              {post.is_shared ? '🔗' : '📤'}
+              {currentPost.is_shared ? '🔗' : '📤'}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={handleSharesPress}>
-            <Text style={styles.countText}>{post.shares_count || 0}</Text>
+            <Text style={styles.countText}>{currentPost.shares_count || 0}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -231,8 +368,24 @@ export const PostCard: React.FC<PostCardProps> = ({
       <ReactionsSharesModal
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
-        postId={post.id}
+        postId={currentPost.id}
         initialTab={modalTab}
+      />
+
+      {/* Edit Post Modal */}
+      <EditPostModal
+        visible={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        post={currentPost}
+        onPostUpdated={handlePostUpdated}
+      />
+
+      {/* Report Post Modal */}
+      <ReportPostModal
+        visible={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        postId={currentPost.id}
+        onReportSuccess={handleReportSuccess}
       />
     </View>
   );
@@ -338,5 +491,55 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '500',
     textDecorationLine: 'underline',
+  },
+  overflowContainer: {
+    position: 'relative',
+  },
+  overflowButton: {
+    padding: 8,
+    borderRadius: 16,
+  },
+  overflowIcon: {
+    fontSize: 20,
+    color: '#666',
+    fontWeight: 'bold',
+  },
+  dropdownOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1,
+  },
+  dropdownMenu: {
+    position: 'absolute',
+    top: 40,
+    right: 0,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    minWidth: 140,
+    paddingVertical: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+    zIndex: 2,
+  },
+  dropdownItem: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  deleteDropdownItem: {
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+  },
+  dropdownItemText: {
+    fontSize: 14,
+    color: '#333',
+  },
+  deleteDropdownText: {
+    color: '#ff3b30',
   },
 });

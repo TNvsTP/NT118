@@ -13,7 +13,7 @@ export const usePosts = () => {
     const [nextCursor, setNextCursor] = useState<string | undefined>();
     const [error, setError] = useState<string | null>(null);
 
-    const { posts, updatePostReaction, updatePostShare, updatePosts } = usePostInteractions(initialPosts);
+    const { posts, updatePostReaction, updatePostShare, updatePosts, updatePost, removePost } = usePostInteractions(initialPosts);
 
     const fetchPosts = useCallback(async (cursor?: string, isRefresh = false) => {
       try {
@@ -80,5 +80,7 @@ export const usePosts = () => {
       refresh,
       updatePostReaction,
       updatePostShare,
+      updatePost,
+      removePost,
     };
   };

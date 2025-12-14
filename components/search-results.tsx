@@ -11,6 +11,9 @@ interface SearchResultsProps {
   onPostPress?: (post: PostItem) => void;
   onReactionToggle?: (postId: number, newState: boolean) => void;
   onShareToggle?: (postId: number, newState: boolean) => void;
+  onPostUpdated?: (updatedPost: PostItem) => void;
+  onPostDeleted?: (postId: number) => void;
+  onPostReported?: (postId: number) => void;
 }
 
 // Component hiển thị avatar user
@@ -27,7 +30,10 @@ export function SearchResults({
   onUserPress, 
   onPostPress, 
   onReactionToggle, 
-  onShareToggle 
+  onShareToggle,
+  onPostUpdated,
+  onPostDeleted,
+  onPostReported
 }: SearchResultsProps) {
   return (
     <View style={styles.container}>
@@ -74,6 +80,9 @@ export function SearchResults({
               post={post}
               onReactionToggle={onReactionToggle}
               onShareToggle={onShareToggle}
+              onPostUpdated={onPostUpdated}
+              onPostDeleted={onPostDeleted}
+              onPostReported={onPostReported}
             />
           ))}
         </View>

@@ -75,6 +75,31 @@ export const PostService = {
     return response;
   },
 
+  editPost: async (postId: number, content: string, media_url: string[]) : Promise<PostItem> => {
+    const response = await api.put<any>(`posts/${postId}`, {content: content, media_url: media_url});
+    const postData = response.post || response;
+    
+    // Chuyển đổi media_urls thành media array nếu cần
+    if (postData.media_url && !postData.media) {
+      postData.media = postData.media_url.map((url: string, index: number) => ({
+        id: index + 1,
+        media_url: url
+      }));
+    }
+    
+    return postData;
+  },
+
+  deletePost: async (postId: number) => {
+    const response = await api.delete<any>(`posts/${postId}`);
+    return response.data || response;
+  },
+
+  reportPost: async (postId: number, reason: string) =>{
+    const response = await api.post<any>(`posts/${postId}/report`,{reason: reason});
+    return response.data || response;
+  },
+
   /**
    * Lấy danh sách comment của bài viết
    */
@@ -84,6 +109,8 @@ export const PostService = {
       data: response.data || response || []
     };
   },
+
+  
 
   /**
    * Đăng comment mới

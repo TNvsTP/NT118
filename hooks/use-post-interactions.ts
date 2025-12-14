@@ -45,10 +45,26 @@ export const usePostInteractions = (initialPosts: PostItem[]) => {
     setPosts(newPosts);
   }, []);
 
+  const updatePost = useCallback((updatedPost: PostItem) => {
+    setPosts(prevPosts => 
+      prevPosts.map(post => 
+        post.id === updatedPost.id ? updatedPost : post
+      )
+    );
+  }, []);
+
+  const removePost = useCallback((postId: number) => {
+    setPosts(prevPosts => 
+      prevPosts.filter(post => post.id !== postId)
+    );
+  }, []);
+
   return {
     posts,
     updatePostReaction,
     updatePostShare,
-    updatePosts
+    updatePosts,
+    updatePost,
+    removePost
   };
 };

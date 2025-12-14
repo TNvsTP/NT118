@@ -32,7 +32,14 @@ export default function ExploreScreen() {
     getTotalCount,
     updatePostReaction,
     updatePostShare,
+    updatePost,
+    removePost,
   } = useSearch();
+
+  const handlePostReported = (postId: number) => {
+    // Ẩn bài đăng sau khi report thành công
+    removePost(postId);
+  };
 
   const filteredResults = getFilteredResults();
 
@@ -68,6 +75,9 @@ export default function ExploreScreen() {
             }}
             onReactionToggle={updatePostReaction}
             onShareToggle={updatePostShare}
+            onPostUpdated={updatePost}
+            onPostDeleted={removePost}
+            onPostReported={handlePostReported}
           />
         ) : (
           <>

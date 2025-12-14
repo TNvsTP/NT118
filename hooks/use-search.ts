@@ -97,6 +97,22 @@ export const useSearch = () => {
     }));
   }, []);
 
+  const updatePost = useCallback((updatedPost: PostItem) => {
+    setSearchResults(prevResults => ({
+      ...prevResults,
+      posts: prevResults.posts.map(post => 
+        post.id === updatedPost.id ? updatedPost : post
+      )
+    }));
+  }, []);
+
+  const removePost = useCallback((postId: number) => {
+    setSearchResults(prevResults => ({
+      ...prevResults,
+      posts: prevResults.posts.filter(post => post.id !== postId)
+    }));
+  }, []);
+
   return {
     searchQuery,
     setSearchQuery,
@@ -111,5 +127,7 @@ export const useSearch = () => {
     clearSearch,
     updatePostReaction,
     updatePostShare,
+    updatePost,
+    removePost,
   };
 };

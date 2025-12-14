@@ -24,6 +24,20 @@ export default function ModalsLayout() {
           title: 'Lượt tương tác'
         }} 
       />
+      <Stack.Screen 
+        name="edit-post" 
+        options={{ 
+          presentation: 'modal',
+          title: 'Chỉnh sửa bài viết'
+        }} 
+      />
+      <Stack.Screen 
+        name="report-post" 
+        options={{ 
+          presentation: 'modal',
+          title: 'Báo cáo bài viết'
+        }} 
+      />
     </Stack>
   );
 }
