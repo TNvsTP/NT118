@@ -1,4 +1,6 @@
 import { type CommentsResponse, type PostItem, type PostsResponse } from '@/models/post';
+import { type ReactionResponse } from '@/models/reaction';
+import { type ShareResponse } from '@/models/share';
 import { api } from './api';
 
 
@@ -20,14 +22,14 @@ export const PostService = {
 
     // --- KHẮC PHỤC LỖI TẠI ĐÂY ---
     // API trả về: { data: [...], next_cursor: "...", path: "..." }
-    
+
     const nextCursor = response.next_cursor; // Lấy đúng field snake_case từ API
 
     return {
       data: response.data || [],
-      nextCursor: nextCursor, 
+      nextCursor: nextCursor,
       // Logic: Nếu có next_cursor (không null) nghĩa là còn trang sau -> hasMore = true
-      hasMore: !!nextCursor 
+      hasMore: !!nextCursor
     };
   },
 
@@ -57,10 +59,10 @@ export const PostService = {
     return response;
   },
 
-  replyComment: async (postId: number, commentId: number, content: string ) : Promise<Comment>  =>{
+  replyComment: async (postId: number, commentId: number, content: string): Promise<Comment> => {
     const response = await api.post<Comment>(
       `posts/${postId}/comments/${commentId}/replies`,
-      {content}
+      { content }
     );
     return response;
   },
@@ -68,7 +70,20 @@ export const PostService = {
   /**
    * Like/Unlike bài viết
    */
-  toggleLike: async (postId: number) => {
-    return api.post(`posts/${postId}/like`, {});
-  }
+  toggleReaction: async (postId: number) => {
+    return api.post<any>(`posts/${postId}/reaction`, {});
+  },
+
+  getReactions: async (postId: number): Promise<ReactionResponse> => {
+    return api.get<any>(`posts/${postId}/reactions`);
+  },
+
+  // Share/Unshare bài viết
+   toggleShare: async (postId: number) => {
+    return api.post<any>(`posts/${postId}/share`, {});
+  },
+
+  getShares: async (postId: number): Promise<ShareResponse> => {
+    return api.get<any>(`posts/${postId}/shares`);
+  },
 };

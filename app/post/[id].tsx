@@ -1,22 +1,20 @@
-import { type Media } from '@/models/post';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  Dimensions,
-  Image,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    ActivityIndicator,
+    Alert,
+    Image,
+    RefreshControl,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import { LoadingSpinner } from '../../components/loading-spinner';
+import { PostCard } from '../../components/post-card';
 import { usePostDetail } from '../../hooks/use-post-detail';
-const { width: screenWidth } = Dimensions.get('window');
 
 // --- Helper Component: Avatar ---
 const UserAvatar = ({ uri, style }: { uri?: string, style: any }) => {
@@ -24,35 +22,6 @@ const UserAvatar = ({ uri, style }: { uri?: string, style: any }) => {
     return <Image source={{ uri }} style={style} />;
   }
   return <View style={[style, { backgroundColor: '#ddd' }]} />;
-};
-
-const MediaGallery = ({ media }: { media: Media[] }) => {
-  if (!media || media.length === 0) return null;
-
-  const imageWidth = media.length === 1 ? screenWidth - 30 : (screenWidth - 45) / 2;
-  const imageHeight = media.length === 1 ? 300 : 150;
-  
-  return (
-    <View style={styles.mediaContainer}>
-      {media.slice(0, 4).map((item, index) => (
-        <View key={item.id} style={[
-          styles.mediaItem,
-          { width: imageWidth, height: imageHeight }
-        ]}>
-          <Image
-            source={{ uri: item.media_url }}
-            style={styles.mediaImage}
-            resizeMode="cover"
-          />
-          {media.length > 4 && index === 3 && (
-            <View style={styles.moreMediaOverlay}>
-              <Text style={styles.moreMediaText}>+{media.length - 4}</Text>
-            </View>
-          )}
-        </View>
-      ))}
-    </View>
-  );
 };
 
 // --- Updated CommentItem with User object ---
@@ -237,7 +206,19 @@ export default function PostDetailScreen() {
   // 2. Ép kiểu sang Number. Nếu không có id thì mặc định là 0 hoặc -1
   const postId = rawId ? Number(rawId) : 0;
    
-  const { post, comments, loading, error, addComment, replyComment, retryComment, removeFailedComment, refresh } = usePostDetail(postId);
+  const { 
+    post, 
+    comments, 
+    loading, 
+    error, 
+    addComment, 
+    replyComment, 
+    retryComment, 
+    removeFailedComment, 
+    refresh,
+    updatePostReaction,
+    updatePostShare
+  } = usePostDetail(postId);
   const [commentText, setCommentText] = useState('');
   const [submittingComment, setSubmittingComment] = useState(false);
   const [replyingToCommentId, setReplyingToCommentId] = useState<number | null>(null);
@@ -266,6 +247,14 @@ export default function PostDetailScreen() {
     }
     
     setSubmittingComment(false);
+  };
+
+  const handleReactionToggle = (postId: number, newState: boolean) => {
+    updatePostReaction(postId, newState);
+  };
+
+  const handleShareToggle = (postId: number, newState: boolean) => {
+    updatePostShare(postId, newState);
   };
 
   const handleSubmitReply = async (parentId: number, content: string) => {
@@ -331,37 +320,12 @@ export default function PostDetailScreen() {
         }
       >
         {/* Post Content */}
-        <View style={styles.post}>
-          <View style={styles.postHeader}>
-            {/* Cập nhật Avatar cho Post Author */}
-            {/* Giả định object post cũng có property user thay vì author string */}
-            <UserAvatar 
-                uri={post.user?.avatarUrl} 
-                style={styles.avatar} 
-            />
-            
-            <View style={styles.authorInfo}>
-               {/* Cập nhật tên tác giả bài viết */}
-              <Text style={styles.author}>{post.user?.name || 'Người dùng ẩn danh'}</Text>
-              <Text style={styles.timestamp}>
-                {new Date(post.created_at).toLocaleDateString('vi-VN')}
-              </Text>
-            </View>
-          </View>
-
-          <Text style={styles.postContent}>{post.content}</Text>
-           
-          <MediaGallery media={post.media} />
-
-          <View style={styles.postFooter}>
-            <TouchableOpacity style={styles.actionButton}>
-              <Text style={styles.stat}>❤️ {post.reactions_count}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.actionButton}>
-              <Text style={styles.stat}>💬 {post.comments_count}</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+        <PostCard 
+          post={post} 
+          isDetailView={true}
+          onReactionToggle={handleReactionToggle}
+          onShareToggle={handleShareToggle}
+        />
 
         {/* Comments Section */}
         <View style={styles.commentsSection}>
@@ -472,83 +436,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-  post: {
-    backgroundColor: '#fff',
-    padding: 15,
-    marginBottom: 10,
-  },
-  postHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#ddd',
-    marginRight: 10,
-  },
-  authorInfo: {
-    flex: 1,
-  },
-  author: {
-    fontWeight: '600',
-    fontSize: 16,
-    marginBottom: 2,
-  },
-  timestamp: {
-    fontSize: 12,
-    color: '#666',
-  },
-  postContent: {
-    fontSize: 15,
-    lineHeight: 22,
-    marginBottom: 10,
-  },
-  mediaContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 5,
-    marginBottom: 10,
-  },
-  mediaItem: {
-    borderRadius: 8,
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  mediaImage: {
-    width: '100%',
-    height: '100%',
-  },
-  moreMediaOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  moreMediaText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  postFooter: {
-    flexDirection: 'row',
-    gap: 20,
-    paddingTop: 15,
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
-  },
-  actionButton: {
-    padding: 5,
-  },
-  stat: {
-    color: '#666',
-  },
+
   commentsSection: {
     backgroundColor: '#fff',
     padding: 15,

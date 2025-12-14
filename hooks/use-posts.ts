@@ -1,16 +1,19 @@
 import { type PostItem } from '@/models/post';
 import { PostService } from '@/services/post';
 import { useCallback, useEffect, useState } from 'react';
+import { usePostInteractions } from './use-post-interactions';
 
 
-  export const usePosts = () => {
-    const [posts, setPosts] = useState<PostItem[]>([]);
+export const usePosts = () => {
+    const [initialPosts, setInitialPosts] = useState<PostItem[]>([]);
     const [loading, setLoading] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
     const [loadingMore, setLoadingMore] = useState(false);
     const [hasMore, setHasMore] = useState(true);
     const [nextCursor, setNextCursor] = useState<string | undefined>();
     const [error, setError] = useState<string | null>(null);
+
+    const { posts, updatePostReaction, updatePostShare, updatePosts } = usePostInteractions(initialPosts);
 
     const fetchPosts = useCallback(async (cursor?: string, isRefresh = false) => {
       try {
@@ -28,9 +31,12 @@ import { useCallback, useEffect, useState } from 'react';
         const data = await PostService.getPosts(cursor);
 
         if (isRefresh || !cursor) {
-          setPosts(data.data);
+          setInitialPosts(data.data);
+          updatePosts(data.data);
         } else {
-          setPosts(prev => [...prev, ...data.data]);
+          const newPosts = [...posts, ...data.data];
+          setInitialPosts(newPosts);
+          updatePosts(newPosts);
         }
 
         setNextCursor(data.nextCursor);
@@ -68,5 +74,7 @@ import { useCallback, useEffect, useState } from 'react';
       error,
       loadMore,
       refresh,
+      updatePostReaction,
+      updatePostShare,
     };
   };

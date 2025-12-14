@@ -218,6 +218,30 @@ export const usePostDetail = (postId: number) => {
     fetchPostDetail();
   }, [fetchPostDetail]);
 
+  const updatePostReaction = useCallback((postId: number, newState: boolean) => {
+    if (post && post.id === postId) {
+      setPost(prev => prev ? {
+        ...prev,
+        is_liked: newState,
+        reactions_count: newState 
+          ? prev.reactions_count + 1 
+          : Math.max(0, prev.reactions_count - 1)
+      } : null);
+    }
+  }, [post]);
+
+  const updatePostShare = useCallback((postId: number, newState: boolean) => {
+    if (post && post.id === postId) {
+      setPost(prev => prev ? {
+        ...prev,
+        is_shared: newState,
+        shares_count: newState 
+          ? prev.shares_count + 1 
+          : Math.max(0, prev.shares_count - 1)
+      } : null);
+    }
+  }, [post]);
+
   return {
     post,
     comments,
@@ -228,5 +252,7 @@ export const usePostDetail = (postId: number) => {
     retryComment,
     removeFailedComment,
     refresh: fetchPostDetail,
+    updatePostReaction,
+    updatePostShare,
   };
 };
