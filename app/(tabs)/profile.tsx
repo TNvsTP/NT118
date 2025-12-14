@@ -1,12 +1,9 @@
 import { Link } from 'expo-router';
-import { ScrollView, Text, TouchableOpacity, View, StyleSheet } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function ProfileScreen() {
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Trang cá nhân</Text>
-      </View>
       
       <ScrollView style={styles.content}>
         <View style={styles.profileHeader}>
@@ -49,17 +46,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f5f5f5',
   },
-  header: {
-    padding: 15,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-    paddingTop: 50,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
+
   content: {
     flex: 1,
   },

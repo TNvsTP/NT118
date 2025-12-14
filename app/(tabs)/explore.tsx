@@ -1,5 +1,8 @@
-import { useState } from 'react';
-import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { SearchFilter } from '@/components/search-filter';
+import { SearchInput } from '@/components/search-input';
+import { SearchResults } from '@/components/search-results';
+import { useSearch } from '@/hooks/use-search';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 const MOCK_USERS = [
   { id: '1', name: 'Nguyễn Văn A', username: '@nguyenvana' },
@@ -14,51 +17,90 @@ const MOCK_TRENDING = [
 ];
 
 export default function ExploreScreen() {
-  const [searchQuery, setSearchQuery] = useState('');
+  const {
+    searchQuery,
+    setSearchQuery,
+    searchResults,
+    isSearching,
+    hasSearched,
+    activeFilter,
+    setActiveFilter,
+    handleSearch,
+    getFilteredResults,
+    getTotalCount,
+    updatePostReaction,
+    updatePostShare,
+  } = useSearch();
+
+
+
+  const filteredResults = getFilteredResults();
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Khám phá</Text>
-      </View>
       
-      <View style={styles.searchContainer}>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Tìm kiếm..."
-          value={searchQuery}
-          onChangeText={setSearchQuery}
+      <SearchInput
+        value={searchQuery}
+        onChangeText={setSearchQuery}
+        onSearch={() => handleSearch()}
+        isSearching={isSearching}
+      />
+
+      {hasSearched && (
+        <SearchFilter
+          activeFilter={activeFilter}
+          onFilterChange={setActiveFilter}
+          totalCount={getTotalCount()}
+          usersCount={searchResults.users.length}
+          postsCount={searchResults.posts.length}
         />
-      </View>
+      )}
 
       <ScrollView style={styles.content}>
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Xu hướng</Text>
-          {MOCK_TRENDING.map((item) => (
-            <TouchableOpacity key={item.id} style={styles.trendingItem}>
-              <Text style={styles.trendingTag}>{item.tag}</Text>
-              <Text style={styles.trendingCount}>{item.posts} bài viết</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Gợi ý theo dõi</Text>
-          {MOCK_USERS.map((user) => (
-            <View key={user.id} style={styles.userItem}>
-              <View style={styles.userInfo}>
-                <View style={styles.avatar} />
-                <View>
-                  <Text style={styles.userName}>{user.name}</Text>
-                  <Text style={styles.userUsername}>{user.username}</Text>
-                </View>
-              </View>
-              <TouchableOpacity style={styles.followButton}>
-                <Text style={styles.followButtonText}>Theo dõi</Text>
-              </TouchableOpacity>
+        {hasSearched ? (
+          <SearchResults 
+            users={filteredResults.users}
+            posts={filteredResults.posts}
+            onUserPress={(user) => {
+              console.log('Navigate to user:', user.id);
+            }}
+            onPostPress={(post) => {
+              console.log('Navigate to post:', post.id);
+            }}
+            onReactionToggle={updatePostReaction}
+            onShareToggle={updatePostShare}
+          />
+        ) : (
+          <>
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Xu hướng</Text>
+              {MOCK_TRENDING.map((item) => (
+                <TouchableOpacity key={item.id} style={styles.trendingItem}>
+                  <Text style={styles.trendingTag}>{item.tag}</Text>
+                  <Text style={styles.trendingCount}>{item.posts} bài viết</Text>
+                </TouchableOpacity>
+              ))}
             </View>
-          ))}
-        </View>
+
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Gợi ý theo dõi</Text>
+              {MOCK_USERS.map((user) => (
+                <View key={user.id} style={styles.userItem}>
+                  <View style={styles.userInfo}>
+                    <View style={styles.avatar} />
+                    <View>
+                      <Text style={styles.userName}>{user.name}</Text>
+                      <Text style={styles.userUsername}>{user.username}</Text>
+                    </View>
+                  </View>
+                  <TouchableOpacity style={styles.followButton}>
+                    <Text style={styles.followButtonText}>Theo dõi</Text>
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </View>
+          </>
+        )}
       </ScrollView>
     </View>
   );
@@ -69,27 +111,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f5f5f5',
   },
-  header: {
-    padding: 15,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-    paddingTop: 50,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
-  searchContainer: {
-    padding: 15,
-    backgroundColor: '#fff',
-  },
-  searchInput: {
-    backgroundColor: '#f0f0f0',
-    padding: 12,
-    borderRadius: 8,
-    fontSize: 16,
-  },
+
+
+
   content: {
     flex: 1,
   },

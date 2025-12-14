@@ -69,19 +69,19 @@ export const PostService = {
    * Like/Unlike bài viết
    */
   toggleReaction: async (postId: number) => {
-    return api.post<any>(`posts/${postId}/reaction`, {});
+    return await api.post<any>(`posts/${postId}/reaction`, {});
   },
 
   getReactions: async (postId: number): Promise<any> => {
-    return api.get<any>(`posts/${postId}/reactions`);
+    return await api.get<any>(`posts/${postId}/reactions`);
   },
 
   // Share/Unshare bài viết
    toggleShare: async (postId: number) => {
-    return api.post<any>(`posts/${postId}/share`, {});
+    return await api.post<any>(`posts/${postId}/share`, {});
   },
 
   getShares: async (postId: number): Promise<any> => {
-    return api.get<any>(`posts/${postId}/shares`);
+    return await api.get<any>(`posts/${postId}/shares`);
   },
 };
