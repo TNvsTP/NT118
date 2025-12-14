@@ -1,16 +1,17 @@
 import { type Media, type PostItem } from '@/models/post';
 import { PostService } from '@/services/post';
 import { router } from 'expo-router';
-import React from 'react';
+import React, { useState } from 'react';
 import {
-    Alert,
-    Dimensions,
-    Image,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  Alert,
+  Dimensions,
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
+import { ReactionsSharesModal } from '../app/modals/reactions-shares-modal';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -74,6 +75,9 @@ export const PostCard: React.FC<PostCardProps> = ({
   onReactionToggle,
   onShareToggle 
 }) => {
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalTab, setModalTab] = useState<'reactions' | 'shares'>('reactions');
+
   const formattedDate = new Date(post.created_at).toLocaleDateString('vi-VN', {
     day: 'numeric', 
     month: 'numeric', 
@@ -133,6 +137,18 @@ export const PostCard: React.FC<PostCardProps> = ({
     }
   };
 
+  // Xử lý hiển thị modal reactions
+  const handleReactionsPress = () => {
+    setModalTab('reactions');
+    setModalVisible(true);
+  };
+
+  // Xử lý hiển thị modal shares
+  const handleSharesPress = () => {
+    setModalTab('shares');
+    setModalVisible(true);
+  };
+
   return (
     <View style={styles.post}>
       <View style={styles.postHeader}>
@@ -166,17 +182,22 @@ export const PostCard: React.FC<PostCardProps> = ({
       
       <View style={styles.postFooter}>
         {/* Reaction button */}
-        <TouchableOpacity 
-          style={styles.actionButton}
-          onPress={handleReactionPress}
-        >
-          <Text style={[
-            styles.stat, 
-            post.is_liked && styles.statActive
-          ]}>
-            {post.is_liked ? '❤️' : '🤍'} {post.reactions_count || 0}
-          </Text>
-        </TouchableOpacity>
+        <View style={styles.actionContainer}>
+          <TouchableOpacity 
+            style={styles.actionButton}
+            onPress={handleReactionPress}
+          >
+            <Text style={[
+              styles.stat, 
+              post.is_liked && styles.statActive
+            ]}>
+              {post.is_liked ? '❤️' : '🤍'}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={handleReactionsPress}>
+            <Text style={styles.countText}>{post.reactions_count || 0}</Text>
+          </TouchableOpacity>
+        </View>
 
         {/* Comment button - chỉ navigate nếu không phải detail view */}
         <TouchableOpacity 
@@ -188,18 +209,31 @@ export const PostCard: React.FC<PostCardProps> = ({
         </TouchableOpacity>
 
         {/* Share button */}
-        <TouchableOpacity 
-          style={styles.actionButton}
-          onPress={handleSharePress}
-        >
-          <Text style={[
-            styles.stat,
-            post.is_shared && styles.statActive
-          ]}>
-            {post.is_shared ? '🔗' : '📤'} {post.shares_count || 0}
-          </Text>
-        </TouchableOpacity>
+        <View style={styles.actionContainer}>
+          <TouchableOpacity 
+            style={styles.actionButton}
+            onPress={handleSharePress}
+          >
+            <Text style={[
+              styles.stat,
+              post.is_shared && styles.statActive
+            ]}>
+              {post.is_shared ? '🔗' : '📤'}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={handleSharesPress}>
+            <Text style={styles.countText}>{post.shares_count || 0}</Text>
+          </TouchableOpacity>
+        </View>
       </View>
+
+      {/* Modal hiển thị danh sách reactions/shares */}
+      <ReactionsSharesModal
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        postId={post.id}
+        initialTab={modalTab}
+      />
     </View>
   );
 };
@@ -281,6 +315,11 @@ const styles = StyleSheet.create({
     borderTopColor: '#f5f5f5',
     paddingTop: 10,
   },
+  actionContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
   actionButton: {
     padding: 5,
   },
@@ -292,5 +331,11 @@ const styles = StyleSheet.create({
   statActive: {
     color: '#007AFF',
     fontWeight: '600',
+  },
+  countText: {
+    color: '#007AFF',
+    fontSize: 13,
+    fontWeight: '500',
+    textDecorationLine: 'underline',
   },
 });

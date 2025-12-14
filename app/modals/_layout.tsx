@@ -17,6 +17,13 @@ export default function ModalsLayout() {
           title: 'Chỉnh sửa trang cá nhân'
         }} 
       />
+      <Stack.Screen 
+        name="reactions-shares-modal" 
+        options={{ 
+          presentation: 'modal',
+          title: 'Lượt tương tác'
+        }} 
+      />
     </Stack>
   );
 }

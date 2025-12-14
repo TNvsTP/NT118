@@ -1,6 +1,4 @@
 import { type CommentsResponse, type PostItem, type PostsResponse } from '@/models/post';
-import { type ReactionResponse } from '@/models/reaction';
-import { type ShareResponse } from '@/models/share';
 import { api } from './api';
 
 
@@ -74,7 +72,7 @@ export const PostService = {
     return api.post<any>(`posts/${postId}/reaction`, {});
   },
 
-  getReactions: async (postId: number): Promise<ReactionResponse> => {
+  getReactions: async (postId: number): Promise<any> => {
     return api.get<any>(`posts/${postId}/reactions`);
   },
 
@@ -83,7 +81,7 @@ export const PostService = {
     return api.post<any>(`posts/${postId}/share`, {});
   },
 
-  getShares: async (postId: number): Promise<ShareResponse> => {
+  getShares: async (postId: number): Promise<any> => {
     return api.get<any>(`posts/${postId}/shares`);
   },
 };
