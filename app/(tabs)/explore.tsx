@@ -3,6 +3,7 @@ import { SearchInput } from '@/components/search-input';
 import { SearchResults } from '@/components/search-results';
 import { useSearch } from '@/hooks/use-search';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const MOCK_USERS = [
   { id: '1', name: 'Nguyễn Văn A', username: '@nguyenvana' },
@@ -17,6 +18,7 @@ const MOCK_TRENDING = [
 ];
 
 export default function ExploreScreen() {
+  const insets = useSafeAreaInsets();
   const {
     searchQuery,
     setSearchQuery,
@@ -32,13 +34,10 @@ export default function ExploreScreen() {
     updatePostShare,
   } = useSearch();
 
-
-
   const filteredResults = getFilteredResults();
 
   return (
-    <View style={styles.container}>
-      
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       <SearchInput
         value={searchQuery}
         onChangeText={setSearchQuery}
@@ -120,7 +119,8 @@ const styles = StyleSheet.create({
   section: {
     backgroundColor: '#fff',
     marginTop: 10,
-    padding: 15,
+    paddingHorizontal: 15,
+    paddingVertical: 15,
   },
   sectionTitle: {
     fontSize: 18,

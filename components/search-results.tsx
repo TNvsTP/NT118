@@ -95,18 +95,21 @@ const styles = StyleSheet.create({
   section: {
     backgroundColor: '#fff',
     marginTop: 10,
-    padding: 15,
+    paddingHorizontal: 0,
+    paddingVertical: 15,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 15,
+    paddingHorizontal: 15,
   },
   userItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: 12,
+    paddingHorizontal: 15,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
   },
