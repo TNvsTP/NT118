@@ -11,6 +11,7 @@ export interface PostItem {
   content: string;
   user: User;
   media: Media[];
+  media_urls?: string[]; // Field từ API
   reactions_count: number;
   comments_count: number;
   shares_count: number;

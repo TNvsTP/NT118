@@ -1,6 +1,7 @@
 import { PostCard } from '@/components/post-card';
 import { type PostItem } from '@/models/post';
-import { Link } from 'expo-router';
+import { Link, useFocusEffect } from 'expo-router';
+import { useCallback } from 'react';
 import {
   FlatList,
   ListRenderItem,
@@ -27,6 +28,16 @@ export default function HomeScreen() {
     updatePostReaction,
     updatePostShare
   } = usePosts();
+
+  // Refresh khi focus vào trang (sau khi đăng bài)
+  useFocusEffect(
+    useCallback(() => {
+      // Chỉ refresh nếu đã có dữ liệu (không phải lần đầu load)
+      if (posts.length > 0) {
+        refresh();
+      }
+    }, [refresh, posts.length])
+  );
 
   const handleLoadMore = () => {
     if (hasMore && !loadingMore) {
