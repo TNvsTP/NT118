@@ -38,6 +38,13 @@ export default function ModalsLayout() {
           title: 'Báo cáo bài viết'
         }} 
       />
+      <Stack.Screen 
+        name="new-conversation" 
+        options={{ 
+          presentation: 'modal',
+          title: 'Cuộc trò chuyện mới'
+        }} 
+      />
     </Stack>
   );
 }

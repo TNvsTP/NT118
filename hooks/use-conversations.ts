@@ -20,6 +20,10 @@ export const useConversations = () => {
     }
   };
 
+  const addConversation = (newConversation: Conversation) => {
+    setConversations(prev => [newConversation, ...prev]);
+  };
+
   useEffect(() => {
     fetchConversations();
   }, []);
@@ -29,5 +33,6 @@ export const useConversations = () => {
     loading,
     error,
     refetch: fetchConversations,
+    addConversation,
   };
 };

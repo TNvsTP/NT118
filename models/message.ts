@@ -3,7 +3,7 @@ export interface Conversation{
     id:number;
     created_at:Date;
     name: string | null;
-    type: string;
+    type: "private" | "group";
     avatar_url: string | null;
     last_message_at: Date;
     participants: Participant[];
