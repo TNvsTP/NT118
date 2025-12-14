@@ -31,12 +31,16 @@ export const usePosts = () => {
         const data = await PostService.getPosts(cursor);
 
         if (isRefresh || !cursor) {
+          // Load lần đầu hoặc refresh - thay thế toàn bộ
           setInitialPosts(data.data);
           updatePosts(data.data);
         } else {
-          const newPosts = [...posts, ...data.data];
-          setInitialPosts(newPosts);
-          updatePosts(newPosts);
+          // Load more - thêm vào cuối danh sách hiện tại
+          setInitialPosts(prevPosts => {
+            const newPosts = [...prevPosts, ...data.data];
+            updatePosts(newPosts);
+            return newPosts;
+          });
         }
 
         setNextCursor(data.nextCursor);
@@ -49,7 +53,7 @@ export const usePosts = () => {
         setRefreshing(false);
         setLoadingMore(false);
       }
-    }, []);
+    }, [updatePosts]);
 
     const loadMore = useCallback(() => {
       if (!loadingMore && hasMore && nextCursor) {
@@ -63,7 +67,7 @@ export const usePosts = () => {
 
     useEffect(() => {
       fetchPosts();
-    }, [fetchPosts]);
+    }, []);
 
     return {
       posts,

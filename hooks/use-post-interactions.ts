@@ -1,8 +1,13 @@
 import { type PostItem } from '@/models/post';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 export const usePostInteractions = (initialPosts: PostItem[]) => {
   const [posts, setPosts] = useState<PostItem[]>(initialPosts);
+
+  // Đồng bộ posts khi initialPosts thay đổi
+  useEffect(() => {
+    setPosts(initialPosts);
+  }, [initialPosts]);
 
   const updatePostReaction = useCallback((postId: number, newState: boolean) => {
     setPosts(prevPosts => 
