@@ -33,13 +33,13 @@ export const usePosts = () => {
         if (isRefresh || !cursor) {
           // Load lần đầu hoặc refresh - thay thế toàn bộ
           setInitialPosts(data.data);
-          updatePosts(data.data);
         } else {
           // Load more - thêm vào cuối danh sách hiện tại
           setInitialPosts(prevPosts => {
-            const newPosts = [...prevPosts, ...data.data];
-            updatePosts(newPosts);
-            return newPosts;
+            // Lọc bỏ các bài đăng trùng lặp dựa trên ID
+            const existingIds = new Set(prevPosts.map(post => post.id));
+            const newUniquePosts = data.data.filter(post => !existingIds.has(post.id));
+            return [...prevPosts, ...newUniquePosts];
           });
         }
 

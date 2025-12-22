@@ -22,8 +22,8 @@ const ConversationItem = ({ conversation, currentUserId }: { conversation: Conve
   };
 
   const getConversationDisplay = () => {
-    // Nếu conversation có avatar_url và name thì hiển thị
-    if (conversation.avatar_url && conversation.name) {
+    // Nếu conversation có name thì hiển thị name và avatar_url của conversation
+    if (conversation.name) {
       return {
         name: conversation.name,
         avatarUrl: conversation.avatar_url,
@@ -31,7 +31,7 @@ const ConversationItem = ({ conversation, currentUserId }: { conversation: Conve
       };
     }
     
-    // Nếu không, lấy thông tin từ participant (đối phương)
+    // Nếu không có name, lấy thông tin từ participant (đối phương)
     const otherParticipants = conversation.participants.filter(p => p.user_id !== currentUserId);
     if (otherParticipants.length > 0) {
       const participant = otherParticipants[0]; // Lấy participant đầu tiên

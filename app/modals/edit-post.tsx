@@ -4,16 +4,16 @@ import { PostService } from '@/services/post';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useState } from 'react';
 import {
-    Alert,
-    Dimensions,
-    Image,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  Dimensions,
+  Image,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -241,3 +241,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
 });
+
+export default EditPostModal;

@@ -31,14 +31,12 @@ export default function HomeScreen() {
     removePost
   } = usePosts();
 
-  // Refresh khi focus vào trang (sau khi đăng bài)
+  // Refresh khi focus vào trang (chỉ khi cần thiết)
   useFocusEffect(
     useCallback(() => {
-      // Chỉ refresh nếu đã có dữ liệu (không phải lần đầu load)
-      if (posts.length > 0) {
-        refresh();
-      }
-    }, [refresh, posts.length])
+      // Không tự động refresh khi focus để tránh làm mất vị trí scroll
+      // Người dùng có thể pull-to-refresh nếu muốn
+    }, [])
   );
 
   const handleLoadMore = () => {
@@ -123,7 +121,7 @@ export default function HomeScreen() {
       
       <FlatList
         data={posts}
-        keyExtractor={(item) => item.id.toString()} // Đảm bảo key là string
+        keyExtractor={(item, index) => `post-${item.id}-${index}`} // Kết hợp ID và index để đảm bảo unique
         renderItem={renderItem}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={refresh} />
@@ -132,6 +130,9 @@ export default function HomeScreen() {
         onEndReachedThreshold={0.5} // Tăng lên 0.5 để load sớm hơn một chút cho mượt
         ListFooterComponent={renderFooter}
         showsVerticalScrollIndicator={false}
+        removeClippedSubviews={true} // Tối ưu performance cho danh sách dài
+        maxToRenderPerBatch={10} // Render tối đa 10 items mỗi batch
+        windowSize={10} // Giữ 10 screens worth của items trong memory
       />
     </View>
   );

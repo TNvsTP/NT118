@@ -42,7 +42,11 @@ export const usePostInteractions = (initialPosts: PostItem[]) => {
   }, []);
 
   const updatePosts = useCallback((newPosts: PostItem[]) => {
-    setPosts(newPosts);
+    // Đảm bảo không có duplicate posts dựa trên ID
+    const uniquePosts = newPosts.filter((post, index, self) => 
+      index === self.findIndex(p => p.id === post.id)
+    );
+    setPosts(uniquePosts);
   }, []);
 
   const updatePost = useCallback((updatedPost: PostItem) => {
