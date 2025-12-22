@@ -1,14 +1,14 @@
 import { PostService } from '@/services/post';
 import React, { useState } from 'react';
 import {
-    Alert,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 interface ReportPostModalProps {
@@ -269,3 +269,5 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
 });
+
+export default ReportPostModal;

@@ -6,6 +6,7 @@ interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   login: (credentials: LoginCredentials) => Promise<void>;
+  register: (data: any) => Promise<{ success: boolean; message: string }>;
   logout: () => Promise<void>;
 }
 
@@ -56,6 +57,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const register = async (data: any): Promise<{ success: boolean; message: string }> => {
+    try {
+      const response = await AuthService.register(data);
+      return { success: true, message: response.message || 'Đăng ký thành công!' };
+    } catch (error: any) {
+      return { success: false, message: error.message || 'Đăng ký thất bại!' };
+    }
+  };
+
   const logout = async () => {
     setIsLoading(true);
     try {
@@ -71,7 +81,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, user, isLoading, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, user, isLoading, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );

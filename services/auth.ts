@@ -13,6 +13,7 @@ export interface LoginCredentials {
 export interface AuthResponse {
   access_token: string;
   user: User;
+  message?: string;
 }
 
 // --- Service Class ---
@@ -48,16 +49,13 @@ export class AuthService {
   /**
    * Đăng ký (Thường AuthService phải có cả hàm này)
    */
-  static async register(data: any): Promise<AuthResponse> {
-    const authData = await api.post<AuthResponse>('auth/register', data);
-    
-    // Auto login sau khi register thành công
-    await Promise.all([
-      SecureStore.setItemAsync(this.TOKEN_KEY, authData.access_token),
-      SecureStore.setItemAsync(this.USER_KEY, JSON.stringify(authData.user))
-    ]);
-    
-    return authData;
+  static async register(data: any): Promise<any> {
+    try {
+      const response = await api.post<any>('auth/register', data);
+      return response; // Trả về toàn bộ response để có thể lấy message
+    } catch (error: any) {
+      throw error;
+    }
   }
 
   /**
