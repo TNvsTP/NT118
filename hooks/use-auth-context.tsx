@@ -59,10 +59,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const register = async (data: any): Promise<{ success: boolean; message: string }> => {
     try {
+      console.log("Auth context - đang đăng ký:", data);
       const response = await AuthService.register(data);
+      console.log("Auth context - register response:", response);
       return { success: true, message: response.message || 'Đăng ký thành công!' };
     } catch (error: any) {
-      return { success: false, message: error.message || 'Đăng ký thất bại!' };
+      console.error("Auth context - register error:", error);
+      const errorMessage = error.message || 'Đăng ký thất bại!';
+      return { success: false, message: errorMessage };
     }
   };
 

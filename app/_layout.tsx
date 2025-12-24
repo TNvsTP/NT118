@@ -23,6 +23,14 @@ export default function RootLayout() {
           <Stack.Screen name="modals" options={{ headerShown: false }} />
           <Stack.Screen name="post" options={{ headerShown: false }} />
           <Stack.Screen name="chat" options={{ headerShown: false }} />
+          <Stack.Screen 
+            name="profile" 
+            options={{ 
+              headerShown: true,
+              title: 'Hồ sơ',
+              headerBackTitle: 'Quay lại'
+            }} 
+          />
           <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
           <Stack.Screen name="+not-found" />
         </Stack>

@@ -51,9 +51,12 @@ export class AuthService {
    */
   static async register(data: any): Promise<any> {
     try {
+      console.log("Đang đăng ký với data:", data);
       const response = await api.post<any>('auth/register', data);
-      return response; // Trả về toàn bộ response để có thể lấy message
+      console.log("Register response:", response);
+      return response; // API service đã trả về data trực tiếp
     } catch (error: any) {
+      console.error("Register error:", error);
       throw error;
     }
   }
