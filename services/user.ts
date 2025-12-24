@@ -17,6 +17,7 @@ export const UserService = {
         const friendsList = response.data?.friends || response.friends || response.data || [];
         
         return friendsList.map((item: any) => ({
+            id: item.pivot.id,
             user: {
                 id: item.id,
                 name: item.name || '',
@@ -40,6 +41,7 @@ export const UserService = {
     },
 
     acceptFriend: async (friendshipId: number): Promise<any> => {
+        console.log(friendshipId);
         const response = await api.patch<any>(`friendships/${friendshipId}`);
         return response;
     },
@@ -58,9 +60,21 @@ export const UserService = {
     // Thêm gender vào body của request
     const response = await api.post<any>(`userProfile`, { 
         name: name, 
-        gender: gender 
+        gender: gender,
     });
     return response.data;
-}
+},
+
+    // Helper function để tìm friendship ID từ user ID
+    getFriendshipId: async (currentUserId: number, targetUserId: number): Promise<number | null> => {
+        try {
+            const friends = await UserService.getFriends(currentUserId);
+            const friendship = friends.find(f => f.user.id === targetUserId);
+            return friendship ? friendship.id : null;
+        } catch (error) {
+            console.error('Error finding friendship ID:', error);
+            return null;
+        }
+    }
 
 }

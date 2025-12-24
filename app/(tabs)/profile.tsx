@@ -244,13 +244,13 @@ export default function ProfileScreen() {
               <View style={styles.requestActions}>
                 <TouchableOpacity 
                   style={styles.acceptButton}
-                  onPress={() => handleAcceptFriend(friendship.user.id)}
+                  onPress={() => handleAcceptFriend(friendship.id)}
                 >
                   <Text style={styles.acceptButtonText}>Chấp nhận</Text>
                 </TouchableOpacity>
                 <TouchableOpacity 
                   style={styles.rejectButton}
-                  onPress={() => handleRejectFriend(friendship.user.id)}
+                  onPress={() => handleRejectFriend(friendship.id)}
                 >
                   <Text style={styles.rejectButtonText}>Từ chối</Text>
                 </TouchableOpacity>

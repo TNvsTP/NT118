@@ -125,10 +125,16 @@ export default function ProfileScreen() {
   const handleAcceptFriend = async () => {
     try {
       setActionLoading(true);
-      // Sử dụng userId làm friendshipId để accept
-      await UserService.acceptFriend(userId);
-      Alert.alert('Thành công', 'Đã chấp nhận lời mời kết bạn');
-      await loadProfileData();
+      // Tìm friendship ID từ user ID
+      const friendshipId = await UserService.getFriendshipId(currentUser?.id || 0, userId);
+      
+      if (friendshipId) {
+        await UserService.acceptFriend(friendshipId);
+        Alert.alert('Thành công', 'Đã chấp nhận lời mời kết bạn');
+        await loadProfileData();
+      } else {
+        Alert.alert('Lỗi', 'Không tìm thấy lời mời kết bạn');
+      }
     } catch (error) {
       console.error('Error accepting friend:', error);
       Alert.alert('Lỗi', 'Không thể chấp nhận lời mời kết bạn');
@@ -151,10 +157,16 @@ export default function ProfileScreen() {
   const confirmDeleteFriend = async () => {
     try {
       setActionLoading(true);
-      // Sử dụng userId làm friendshipId để delete
-      await UserService.deleteFriend(userId);
-      Alert.alert('Thành công', 'Đã hủy kết bạn');
-      await loadProfileData();
+      // Tìm friendship ID từ user ID
+      const friendshipId = await UserService.getFriendshipId(currentUser?.id || 0, userId);
+      
+      if (friendshipId) {
+        await UserService.deleteFriend(friendshipId);
+        Alert.alert('Thành công', 'Đã hủy kết bạn');
+        await loadProfileData();
+      } else {
+        Alert.alert('Lỗi', 'Không tìm thấy mối quan hệ bạn bè');
+      }
     } catch (error) {
       console.error('Error deleting friend:', error);
       Alert.alert('Lỗi', 'Không thể hủy kết bạn');
